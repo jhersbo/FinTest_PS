@@ -100,7 +100,7 @@ async def test_single_symbol(symbol: str = 'AAPL'):
     alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY', 'demo')
     news_api_key = os.getenv('NEWS_API_KEY', 'demo')
     
-    data_service = DataService(alpha_vantage_key, news_api_key)
+    data_service = DataService()
     
     logger.info(f"Testing {symbol} in detail...")
     
