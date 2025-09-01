@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Init env
-load_dotenv()
+loaded = load_dotenv()
 
 async def test_data_pipeline():
     """Test the data pipeline with sample data."""
@@ -96,10 +96,7 @@ async def test_data_pipeline():
 
 async def test_single_symbol(symbol: str = 'AAPL'):
     """Test a single symbol in detail."""
-    
-    alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY', 'demo')
-    news_api_key = os.getenv('NEWS_API_KEY', 'demo')
-    
+
     data_service = DataService()
     
     logger.info(f"Testing {symbol} in detail...")
