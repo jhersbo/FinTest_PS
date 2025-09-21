@@ -41,263 +41,264 @@ class DataService:
         self.last_alpha_vantage_request = 0
         self.last_news_request = 0
         self.request_delay = 0.1  # 100ms between requests
+
         
-    async def get_stock_data(self, symbol: str, period: str = "1y") -> Optional[pd.DataFrame]:
-        """
-        Get historical stock data from Yahoo Finance.
+    # async def get_stock_data(self, symbol: str, period: str = "1y") -> Optional[pd.DataFrame]:
+    #     """
+    #     Get historical stock data from Yahoo Finance.
         
-        Args:
-            symbol: Stock symbol (e.g., 'AAPL')
-            period: Time period ('1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max')
+    #     Args:
+    #         symbol: Stock symbol (e.g., 'AAPL')
+    #         period: Time period ('1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max')
             
-        Returns:
-            DataFrame with OHLCV data or None if error
-        """
-        try:
-            # Rate limiting
-            await self._rate_limit('yahoo')
+    #     Returns:
+    #         DataFrame with OHLCV data or None if error
+    #     """
+    #     try:
+    #         # Rate limiting
+    #         await self._rate_limit('yahoo')
             
-            logger.info(f"Fetching stock data for {symbol} for period {period}")
+    #         logger.info(f"Fetching stock data for {symbol} for period {period}")
             
-            # Get data from Yahoo Finance
-            ticker = yf.Ticker(symbol)
-            data = ticker.history(period=period)
+    #         # Get data from Yahoo Finance
+    #         ticker = yf.Ticker(symbol)
+    #         data = ticker.history(period=period)
             
-            if data.empty:
-                logger.warning(f"No data returned for {symbol}")
-                return None
+    #         if data.empty:
+    #             logger.warning(f"No data returned for {symbol}")
+    #             return None
                 
-            # Clean and format data
-            data = self._clean_stock_data(data)
+    #         # Clean and format data
+    #         data = self._clean_stock_data(data)
             
-            logger.info(f"Successfully fetched {len(data)} records for {symbol}")
-            return data
+    #         logger.info(f"Successfully fetched {len(data)} records for {symbol}")
+    #         return data
             
-        except Exception as e:
-            logger.error(f"Error fetching stock data for {symbol}: {str(e)}")
-            return None
+    #     except Exception as e:
+    #         logger.error(f"Error fetching stock data for {symbol}: {str(e)}")
+    #         return None
     
-    async def get_technical_indicators(self, symbol: str) -> Dict[str, Any]:
-        """
-        Get technical indicators from Alpha Vantage.
+    # async def get_technical_indicators(self, symbol: str) -> Dict[str, Any]:
+    #     """
+    #     Get technical indicators from Alpha Vantage.
         
-        Args:
-            symbol: Stock symbol
+    #     Args:
+    #         symbol: Stock symbol
             
-        Returns:
-            Dictionary with technical indicators
-        """
-        try:
-            # Rate limiting
-            await self._rate_limit('alpha_vantage')
+    #     Returns:
+    #         Dictionary with technical indicators
+    #     """
+    #     try:
+    #         # Rate limiting
+    #         await self._rate_limit('alpha_vantage')
             
-            logger.info(f"Fetching technical indicators for {symbol}")
+    #         logger.info(f"Fetching technical indicators for {symbol}")
             
-            indicators = {}
+    #         indicators = {}
             
-            # RSI
-            try:
-                rsi_data, _ = self.ti.get_rsi(symbol=symbol, interval='daily', time_period=14, series_type='close')
-                if not rsi_data.empty:
-                    indicators['rsi'] = rsi_data.iloc[-1]['RSI']
-            except Exception as e:
-                logger.warning(f"Could not fetch RSI for {symbol}: {str(e)}")
+    #         # RSI
+    #         try:
+    #             rsi_data, _ = self.ti.get_rsi(symbol=symbol, interval='daily', time_period=14, series_type='close')
+    #             if not rsi_data.empty:
+    #                 indicators['rsi'] = rsi_data.iloc[-1]['RSI']
+    #         except Exception as e:
+    #             logger.warning(f"Could not fetch RSI for {symbol}: {str(e)}")
             
-            # MACD - TODO: this is a premium endpoint, so we're not going to use it for now
-            # try:
-            #     macd_data, _ = self.ti.get_macd(symbol=symbol, interval='daily', series_type='close')
-            #     if not macd_data.empty:
-            #         latest = macd_data.iloc[-1]
-            #         indicators['macd'] = {
-            #             'macd': latest['MACD'],
-            #             'macd_signal': latest['MACD_Signal'],
-            #             'macd_hist': latest['MACD_Hist']
-            #         }
-            # except Exception as e:
-            #     logger.warning(f"Could not fetch MACD for {symbol}: {str(e)}")
+    #         # MACD - TODO: this is a premium endpoint, so we're not going to use it for now
+    #         # try:
+    #         #     macd_data, _ = self.ti.get_macd(symbol=symbol, interval='daily', series_type='close')
+    #         #     if not macd_data.empty:
+    #         #         latest = macd_data.iloc[-1]
+    #         #         indicators['macd'] = {
+    #         #             'macd': latest['MACD'],
+    #         #             'macd_signal': latest['MACD_Signal'],
+    #         #             'macd_hist': latest['MACD_Hist']
+    #         #         }
+    #         # except Exception as e:
+    #         #     logger.warning(f"Could not fetch MACD for {symbol}: {str(e)}")
             
-            # Bollinger Bands
-            try:
-                bb_data, _ = self.ti.get_bbands(symbol=symbol, interval='daily', time_period=20, series_type='close')
-                if not bb_data.empty:
-                    latest = bb_data.iloc[-1]
-                    indicators['bollinger_bands'] = {
-                        'upper': latest['Real Upper Band'],
-                        'middle': latest['Real Middle Band'],
-                        'lower': latest['Real Lower Band']
-                    }
-            except Exception as e:
-                logger.warning(f"Could not fetch Bollinger Bands for {symbol}: {str(e)}")
+    #         # Bollinger Bands
+    #         try:
+    #             bb_data, _ = self.ti.get_bbands(symbol=symbol, interval='daily', time_period=20, series_type='close')
+    #             if not bb_data.empty:
+    #                 latest = bb_data.iloc[-1]
+    #                 indicators['bollinger_bands'] = {
+    #                     'upper': latest['Real Upper Band'],
+    #                     'middle': latest['Real Middle Band'],
+    #                     'lower': latest['Real Lower Band']
+    #                 }
+    #         except Exception as e:
+    #             logger.warning(f"Could not fetch Bollinger Bands for {symbol}: {str(e)}")
             
-            # Moving Averages
-            try:
-                sma_data, _ = self.ti.get_sma(symbol=symbol, interval='daily', time_period=20, series_type='close')
-                if not sma_data.empty:
-                    indicators['sma_20'] = sma_data.iloc[-1]['SMA']
-            except Exception as e:
-                logger.warning(f"Could not fetch SMA for {symbol}: {str(e)}")
+    #         # Moving Averages
+    #         try:
+    #             sma_data, _ = self.ti.get_sma(symbol=symbol, interval='daily', time_period=20, series_type='close')
+    #             if not sma_data.empty:
+    #                 indicators['sma_20'] = sma_data.iloc[-1]['SMA']
+    #         except Exception as e:
+    #             logger.warning(f"Could not fetch SMA for {symbol}: {str(e)}")
             
-            logger.info(f"Successfully fetched {len(indicators)} technical indicators for {symbol}")
-            return indicators
+    #         logger.info(f"Successfully fetched {len(indicators)} technical indicators for {symbol}")
+    #         return indicators
             
-        except Exception as e:
-            logger.error(f"Error fetching technical indicators for {symbol}: {str(e)}")
-            return {}
+    #     except Exception as e:
+    #         logger.error(f"Error fetching technical indicators for {symbol}: {str(e)}")
+    #         return {}
     
-    async def get_news_sentiment(self, symbol: str, days: int = 7) -> Dict[str, Any]:
-        """
-        Get news sentiment for a stock symbol.
+    # async def get_news_sentiment(self, symbol: str, days: int = 7) -> Dict[str, Any]:
+    #     """
+    #     Get news sentiment for a stock symbol.
         
-        Args:
-            symbol: Stock symbol
-            days: Number of days to look back
+    #     Args:
+    #         symbol: Stock symbol
+    #         days: Number of days to look back
             
-        Returns:
-            Dictionary with sentiment analysis
-        """
-        try:
-            # Rate limiting
-            await self._rate_limit('news')
+    #     Returns:
+    #         Dictionary with sentiment analysis
+    #     """
+    #     try:
+    #         # Rate limiting
+    #         await self._rate_limit('news')
             
-            logger.info(f"Fetching news sentiment for {symbol}")
+    #         logger.info(f"Fetching news sentiment for {symbol}")
             
-            # Calculate date range
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=days)
+    #         # Calculate date range
+    #         end_date = datetime.now()
+    #         start_date = end_date - timedelta(days=days)
             
-            # NewsAPI query
-            url = "https://newsapi.org/v2/everything"
-            params = {
-                'q': f'"{symbol}" OR "{symbol} stock"',
-                'from': start_date.strftime('%Y-%m-%d'),
-                'to': end_date.strftime('%Y-%m-%d'),
-                'language': 'en',
-                'sortBy': 'publishedAt',
-                'apiKey': self.news_api_key
-            }
+    #         # NewsAPI query
+    #         url = "https://newsapi.org/v2/everything"
+    #         params = {
+    #             'q': f'"{symbol}" OR "{symbol} stock"',
+    #             'from': start_date.strftime('%Y-%m-%d'),
+    #             'to': end_date.strftime('%Y-%m-%d'),
+    #             'language': 'en',
+    #             'sortBy': 'publishedAt',
+    #             'apiKey': self.news_api_key
+    #         }
             
-            response = requests.get(url, params=params)
-            response.raise_for_status()
+    #         response = requests.get(url, params=params)
+    #         response.raise_for_status()
             
-            data = response.json()
+    #         data = response.json()
             
-            if data['status'] != 'ok':
-                logger.error(f"NewsAPI error: {data.get('message', 'Unknown error')}")
-                return {}
+    #         if data['status'] != 'ok':
+    #             logger.error(f"NewsAPI error: {data.get('message', 'Unknown error')}")
+    #             return {}
             
-            articles = data.get('articles', [])
+    #         articles = data.get('articles', [])
             
-            if not articles:
-                logger.warning(f"No news articles found for {symbol}")
-                return {
-                    'sentiment_score': 0.0,
-                    'article_count': 0,
-                    'articles': []
-                }
+    #         if not articles:
+    #             logger.warning(f"No news articles found for {symbol}")
+    #             return {
+    #                 'sentiment_score': 0.0,
+    #                 'article_count': 0,
+    #                 'articles': []
+    #             }
             
-            # Simple sentiment analysis (can be enhanced later)
-            sentiment_scores = []
-            processed_articles = []
+    #         # Simple sentiment analysis (can be enhanced later)
+    #         sentiment_scores = []
+    #         processed_articles = []
             
-            for article in articles[:20]:  # Limit to 20 articles
-                # Simple keyword-based sentiment
-                title = article.get('title', '').lower()
-                description = article.get('description', '').lower()
-                content = f"{title} {description}"
+    #         for article in articles[:20]:  # Limit to 20 articles
+    #             # Simple keyword-based sentiment
+    #             title = article.get('title', '').lower()
+    #             description = article.get('description', '').lower()
+    #             content = f"{title} {description}"
                 
-                # Basic sentiment keywords
-                positive_words = ['up', 'rise', 'gain', 'positive', 'bullish', 'growth', 'profit', 'earnings beat']
-                negative_words = ['down', 'fall', 'drop', 'negative', 'bearish', 'loss', 'decline', 'earnings miss']
+    #             # Basic sentiment keywords
+    #             positive_words = ['up', 'rise', 'gain', 'positive', 'bullish', 'growth', 'profit', 'earnings beat']
+    #             negative_words = ['down', 'fall', 'drop', 'negative', 'bearish', 'loss', 'decline', 'earnings miss']
                 
-                positive_count = sum(1 for word in positive_words if word in content)
-                negative_count = sum(1 for word in negative_words if word in content)
+    #             positive_count = sum(1 for word in positive_words if word in content)
+    #             negative_count = sum(1 for word in negative_words if word in content)
                 
-                if positive_count > negative_count:
-                    sentiment = 0.5
-                elif negative_count > positive_count:
-                    sentiment = -0.5
-                else:
-                    sentiment = 0.0
+    #             if positive_count > negative_count:
+    #                 sentiment = 0.5
+    #             elif negative_count > positive_count:
+    #                 sentiment = -0.5
+    #             else:
+    #                 sentiment = 0.0
                 
-                sentiment_scores.append(sentiment)
+    #             sentiment_scores.append(sentiment)
                 
-                processed_articles.append({
-                    'title': article.get('title'),
-                    'description': article.get('description'),
-                    'url': article.get('url'),
-                    'published_at': article.get('publishedAt'),
-                    'sentiment': sentiment
-                })
+    #             processed_articles.append({
+    #                 'title': article.get('title'),
+    #                 'description': article.get('description'),
+    #                 'url': article.get('url'),
+    #                 'published_at': article.get('publishedAt'),
+    #                 'sentiment': sentiment
+    #             })
             
-            # Calculate overall sentiment
-            overall_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0.0
+    #         # Calculate overall sentiment
+    #         overall_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0.0
             
-            result = {
-                'sentiment_score': overall_sentiment,
-                'article_count': len(processed_articles),
-                'articles': processed_articles,
-                'sentiment_distribution': {
-                    'positive': len([s for s in sentiment_scores if s > 0]),
-                    'negative': len([s for s in sentiment_scores if s < 0]),
-                    'neutral': len([s for s in sentiment_scores if s == 0])
-                }
-            }
+    #         result = {
+    #             'sentiment_score': overall_sentiment,
+    #             'article_count': len(processed_articles),
+    #             'articles': processed_articles,
+    #             'sentiment_distribution': {
+    #                 'positive': len([s for s in sentiment_scores if s > 0]),
+    #                 'negative': len([s for s in sentiment_scores if s < 0]),
+    #                 'neutral': len([s for s in sentiment_scores if s == 0])
+    #             }
+    #         }
             
-            logger.info(f"Successfully fetched news sentiment for {symbol}: {overall_sentiment:.3f}")
-            return result
+    #         logger.info(f"Successfully fetched news sentiment for {symbol}: {overall_sentiment:.3f}")
+    #         return result
             
-        except Exception as e:
-            logger.error(f"Error fetching news sentiment for {symbol}: {str(e)}")
-            return {}
+    #     except Exception as e:
+    #         logger.error(f"Error fetching news sentiment for {symbol}: {str(e)}")
+    #         return {}
     
-    async def get_comprehensive_data(self, symbol: str, period: str = "1y") -> Dict[str, Any]:
-        """
-        Get comprehensive data for a symbol including price data, technical indicators, and sentiment.
+    # async def get_comprehensive_data(self, symbol: str, period: str = "1y") -> Dict[str, Any]:
+    #     """
+    #     Get comprehensive data for a symbol including price data, technical indicators, and sentiment.
         
-        Args:
-            symbol: Stock symbol
-            period: Time period for historical data
+    #     Args:
+    #         symbol: Stock symbol
+    #         period: Time period for historical data
             
-        Returns:
-            Dictionary with all data
-        """
-        logger.info(f"Fetching comprehensive data for {symbol}")
+    #     Returns:
+    #         Dictionary with all data
+    #     """
+    #     logger.info(f"Fetching comprehensive data for {symbol}")
         
-        # Fetch all data concurrently
-        tasks = [
-            self.get_stock_data(symbol, period),
-            self.get_technical_indicators(symbol),
-            self.get_news_sentiment(symbol)
-        ]
+    #     # Fetch all data concurrently
+    #     tasks = [
+    #         self.get_stock_data(symbol, period),
+    #         self.get_technical_indicators(symbol),
+    #         self.get_news_sentiment(symbol)
+    #     ]
         
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+    #     results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        # Process results
-        stock_data, technical_data, sentiment_data = results
+    #     # Process results
+    #     stock_data, technical_data, sentiment_data = results
         
-        # Handle exceptions
-        if isinstance(stock_data, Exception):
-            logger.error(f"Error in stock data: {stock_data}")
-            stock_data = None
-        if isinstance(technical_data, Exception):
-            logger.error(f"Error in technical data: {technical_data}")
-            technical_data = {}
-        if isinstance(sentiment_data, Exception):
-            logger.error(f"Error in sentiment data: {sentiment_data}")
-            sentiment_data = {}
+    #     # Handle exceptions
+    #     if isinstance(stock_data, Exception):
+    #         logger.error(f"Error in stock data: {stock_data}")
+    #         stock_data = None
+    #     if isinstance(technical_data, Exception):
+    #         logger.error(f"Error in technical data: {technical_data}")
+    #         technical_data = {}
+    #     if isinstance(sentiment_data, Exception):
+    #         logger.error(f"Error in sentiment data: {sentiment_data}")
+    #         sentiment_data = {}
         
-        return {
-            'symbol': symbol,
-            'timestamp': datetime.now().isoformat(),
-            'stock_data': stock_data,
-            'technical_indicators': technical_data,
-            'sentiment': sentiment_data,
-            'data_completeness': {
-                'stock_data': stock_data is not None,
-                'technical_indicators': len(technical_data) > 0,
-                'sentiment': len(sentiment_data) > 0
-            }
-        }
+    #     return {
+    #         'symbol': symbol,
+    #         'timestamp': datetime.now().isoformat(),
+    #         'stock_data': stock_data,
+    #         'technical_indicators': technical_data,
+    #         'sentiment': sentiment_data,
+    #         'data_completeness': {
+    #             'stock_data': stock_data is not None,
+    #             'technical_indicators': len(technical_data) > 0,
+    #             'sentiment': len(sentiment_data) > 0
+    #         }
+    #     }
     
     def _clean_stock_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """

@@ -1,5 +1,6 @@
 venv/
 .env
+dummy/
 
 # Python
 __pycache__/

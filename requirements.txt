@@ -4,6 +4,7 @@ numpy
 yfinance
 alpha_vantage
 requests
+polygon_api_client
 
 # FastAPI and web framework
 fastapi
