@@ -4,16 +4,16 @@ Data collection service for market data, sentiment, and technical indicators.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-import pandas as pd
-import yfinance as yf
-import requests
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.techindicators import TechIndicators
 import time
-import dotenv
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
+import dotenv
+import pandas as pd
+import requests
+import yfinance as yf
+from alpha_vantage.techindicators import TechIndicators
+from alpha_vantage.timeseries import TimeSeries
 
 logger = logging.getLogger(__name__)
 

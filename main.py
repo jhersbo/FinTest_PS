@@ -19,13 +19,15 @@ loaded = load_dotenv()
 async def testAsync():
     p = PolygonClient()
     
-    df = await p.getDMS()
+    # df = await p.getDMS()
     # df = await p.getDetails("AAPL")
+    df = await p.getSMA("AAPL")
 
     print(df)
 
 def testSync():
-    print(today_minus_days(21))
+    p = PolygonClient()
+    print(p.getDetails("AAPL"))
     
 
 

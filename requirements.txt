@@ -13,3 +13,4 @@ pydantic
 
 #Utils
 python-dotenv
+holidays

@@ -54,6 +54,8 @@ A comprehensive US stock market prediction service that analyzes market indicato
 - **Backtesting framework** for model validation
 
 ### 5. API Endpoints
+- **GET /details/{symbol}** - Get background details for a security
+- **GET /details/dms** - Get daily market summary
 - **GET /predictions/{symbol}** - Get predictions for specific US stock
 - **GET /analysis/{symbol}** - Get comprehensive analysis
 - **GET /sentiment/{symbol}** - Get sentiment analysis
