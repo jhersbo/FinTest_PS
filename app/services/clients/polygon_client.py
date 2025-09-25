@@ -1,10 +1,10 @@
 import logging
 from typing import Optional
-from datetime import datetime
 
 import dotenv
 import pandas as pd
 from polygon import RESTClient
+import numpy as np
 
 import app.utils.dates as dates
 from app.services.clients.client_utils import ratelimit
@@ -29,19 +29,25 @@ class PolygonClient():
                 "2025-09-12",
                 adjusted = adjusted
             )
-            return pd.DataFrame([obj.__dict__ for obj in resp])
+            df = pd.DataFrame([obj.__dict__ for obj in resp])
+            df = df.replace(np.nan, value=None)
+
+            return df
         except Exception as e:
             L.exception(e)
-            return pd.DataFrame()
+            raise Exception(e)
     
     @ratelimit()
     async def getDetails(self, ticker: str) -> Optional[pd.DataFrame]:
         try:
             resp = self.REST.get_ticker_details(ticker=ticker)
-            return pd.DataFrame([resp.__dict__])
+            df = pd.DataFrame([resp.__dict__])
+            df = df.replace(np.nan, None)
+            
+            return df
         except Exception as e:
             L.exception(e)
-            return pd.DataFrame()
+            raise Exception(e)
         
     @ratelimit()
     async def getSMA(self, ticker:str, window:int=50) -> Optional[pd.DataFrame]:
@@ -56,10 +62,12 @@ class PolygonClient():
                 limit=5000,
             )
             df = pd.DataFrame([obj.__dict__ for obj in resp.values])
-            df = df.dropna()
+            # df = df.dropna()
             df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.strftime("%Y-%m-%d")
-            
+            df = df.replace([float("inf"), float("-inf")], np.nan)
+            df = df.where(pd.notnull(df), None)
+
             return df
         except Exception as e:
             L.exception(e)
-            return pd.DataFrame()
+            raise Exception(e)

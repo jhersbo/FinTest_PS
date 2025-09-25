@@ -1,5 +1,3 @@
-import logging
-
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
@@ -13,10 +11,6 @@ app = FastAPI(
 # ROUTERS
 app.include_router(details_router)
 # END ROUTERS
-
-# LOGGING
-# TODO - set up sensible logging
-# END LOGGING
 
 @app.get("/")
 def root():
