@@ -1,5 +1,5 @@
-#### Prediction Service API
+# Prediction Service API
 
-## To start:
+### To start:
 ```bash
-uvicorn app.api.main:app --reload; 
+uvicorn app.api.main:app --reload
