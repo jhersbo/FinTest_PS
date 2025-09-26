@@ -24,50 +24,36 @@ class PolygonClient():
     @ratelimit()
     async def getDMS(self, adjusted: bool = True) -> Optional[pd.DataFrame]:
         # TODO - implement a way to get data against the most recent day
-        try:
-            resp = self.REST.get_grouped_daily_aggs(
-                "2025-09-12",
-                adjusted = adjusted
-            )
-            df = pd.DataFrame([obj.__dict__ for obj in resp])
-            df = df.replace(np.nan, value=None)
+        resp = self.REST.get_grouped_daily_aggs(
+            "2025-09-12",
+            adjusted = adjusted
+        )
+        df = pd.DataFrame([obj.__dict__ for obj in resp])
+        df = df.replace(np.nan, value=None)
 
-            return df
-        except Exception as e:
-            L.exception(e)
-            raise Exception(e)
+        return df
     
     @ratelimit()
     async def getDetails(self, ticker: str) -> Optional[pd.DataFrame]:
-        try:
-            resp = self.REST.get_ticker_details(ticker=ticker)
-            df = pd.DataFrame([resp.__dict__])
-            df = df.replace(np.nan, None)
-            
-            return df
-        except Exception as e:
-            L.exception(e)
-            raise Exception(e)
+        resp = self.REST.get_ticker_details(ticker=ticker)
+        df = pd.DataFrame([resp.__dict__])
+        df = df.replace(np.nan, None)
+        
+        return df
         
     @ratelimit()
-    async def getSMA(self, ticker:str, window:int=50) -> Optional[pd.DataFrame]:
-        try:
-            resp = self.REST.get_sma(
-                ticker=ticker,
-                timespan="day",
-                adjusted="true",
-                window=window,
-                series_type="close",
-                order="desc",
-                limit=5000,
-            )
-            df = pd.DataFrame([obj.__dict__ for obj in resp.values])
-            # df = df.dropna()
-            df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.strftime("%Y-%m-%d")
-            df = df.replace([float("inf"), float("-inf")], np.nan)
-            df = df.where(pd.notnull(df), None)
+    async def getSMA(self, ticker:str, window:int=50, limit:int=5000) -> Optional[pd.DataFrame]:
+        resp = self.REST.get_sma(
+            ticker=ticker,
+            timespan="day",
+            adjusted="true",
+            window=window,
+            series_type="close",
+            order="desc",
+            limit=limit,
+        )
+        df = pd.DataFrame([obj.__dict__ for obj in resp.values])
+        df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.strftime("%Y-%m-%d")
+        df = df.replace(np.nan, None)
 
-            return df
-        except Exception as e:
-            L.exception(e)
-            raise Exception(e)
+        return df

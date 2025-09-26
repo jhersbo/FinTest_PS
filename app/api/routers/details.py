@@ -1,10 +1,12 @@
 import json
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Header, Request
 from fastapi.responses import JSONResponse
 
 from app.services.clients.polygon_client import PolygonClient
 from app.utils.logger import get_logger
+from .utils.security import auth
 
 # CLIENTS
 P = PolygonClient()
@@ -21,39 +23,51 @@ L = get_logger(__name__)
 #      ROUTES      #
 ####################
 @router.get("/dms")
+@auth
 async def get_DMS() -> JSONResponse:
-    try:
-        result = await P.getDMS()
-        return JSONResponse(
-            {
-                "result": "Ok",
-                "subject": {
-                    "data": result.to_dict(orient="records")
-                }
+    result = await P.getDMS()
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "data": result.to_dict(orient="records")
             }
-        )
-    except Exception as e:
-        L.exception(e)
-        return JSONResponse(
-            content={"result": "Error"}
-        )
+        }
+    )
 
 @router.get("/{ticker}")
-async def get_Details(ticker):
-    try:
-        if ticker is None:
-            raise Exception("Ticker arg is missing.")
-        result = await P.getDetails(ticker=ticker)
-        return JSONResponse(
-            {
-                "result": "Ok",
-                "subject": {
-                    "data": json.loads(result.to_json(orient="records"))
-                }
+@auth
+async def get_Details(ticker:str) -> JSONResponse:
+    if ticker is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Required ticker url parameter is missing"
+        )
+    result = await P.getDetails(ticker=ticker)
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "data": json.loads(result.to_json(orient="records"))
             }
+        }
+    )
+    
+@router.get("/sma/{ticker}")
+@auth
+async def get_SMA(ticker:str, window:int=50, limit:int=5000) -> JSONResponse:
+    if ticker is None:
+        print("HERE") # TODO - IDK why this isn't working when the ticker is blank
+        raise HTTPException(
+            status_code=404,
+            detail="Required ticker url parameter is missing"
         )
-    except Exception as e:
-        L.exception(e)
-        return JSONResponse(
-            content={"result": "Error"}
-        )
+    result = await P.getSMA(ticker=ticker, window=window, limit=limit)
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "data": result.to_dict(orient="records")
+            }
+        }
+    )
