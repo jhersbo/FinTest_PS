@@ -18,7 +18,7 @@ async def get_session() -> AsyncSession:
     try:
         return await session.execute(...)
     finally:
-        session.close()
+        await session.close()
     """
     return AsyncSessionLocal()
 
