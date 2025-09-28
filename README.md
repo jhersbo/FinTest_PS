@@ -1,4 +1,4 @@
-# Prediction Service API
+# FinTest PS API
 
 ### To start:
 ```bash
