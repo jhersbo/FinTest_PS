@@ -17,5 +17,7 @@ class RequestCapture(BaseHTTPMiddleware):
         return response
     
 def get_request() -> Union[Request, None]:
-    """Access the current request object."""
+    """
+    Returns the current request object
+    """
     return R.get(None)

@@ -3,6 +3,7 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 
 from app.api.routers.details import router as details_router
+from app.api.routers.client_auth import router as client_router
 from app.utils.logger import get_logger
 from app.api.routers.utils.responses import WrappedException
 from app.api.middleware.request_capture import RequestCapture
@@ -16,6 +17,7 @@ app = FastAPI(
 )
 
 # ROUTERS
+app.include_router(client_router)
 app.include_router(details_router)
 # END ROUTERS
 

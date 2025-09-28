@@ -1,13 +1,8 @@
 from functools import wraps
-from typing import Annotated
-
-from fastapi import HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 
 from app.api.middleware.request_capture import get_request
-from app.core.db.session import get_session
 from app.core.models.token import Token
+from .responses import BadTokenException
 
 def auth(fn):
     """
@@ -27,14 +22,19 @@ def auth(fn):
         *args, 
         **kwargs
     ):
-        token = await Token.find_by_token("1234567890")
-        # TODO - eventually implement per-endpoint authentication based on request, etc...
+        # AUTHENTICATE API TOKEN
         req = get_request()
-        if True is False:
-            raise HTTPException(
-                status_code=403,
-                detail="Insufficient privileges"
-            )
+        x_api_key = req.headers.get("x-api-key")
+        if not x_api_key:
+            raise BadTokenException()
+        
+        token = await Token.find_by_token(x_api_key)
+        if token:
+            if not token.is_valid():
+                raise BadTokenException(msg="Token expired. Please obtain a new one.")
+        else:
+            raise BadTokenException()
 
+        # TODO - authenticate endpoint access based on permissions group
         return await fn(*args, **kwargs)
     return w
