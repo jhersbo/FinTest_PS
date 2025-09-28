@@ -40,11 +40,6 @@ async def get_DMS() -> JSONResponse:
 @router.get("/{ticker}")
 @auth
 async def get_Details(ticker:str) -> JSONResponse:
-    if ticker is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Required ticker url parameter is missing"
-        )
     result = await P.getDetails(ticker=ticker)
     return JSONResponse(
         {
@@ -58,12 +53,6 @@ async def get_Details(ticker:str) -> JSONResponse:
 @router.get("/sma/{ticker}")
 @auth
 async def get_SMA(ticker:str, window:int=50, limit:int=5000) -> JSONResponse:
-    if ticker is None:
-        print("HERE") # TODO - IDK why this isn't working when the ticker is blank
-        raise HTTPException(
-            status_code=404,
-            detail="Required ticker url parameter is missing"
-        )
     result = await P.getSMA(ticker=ticker, window=window, limit=limit)
     return JSONResponse(
         {

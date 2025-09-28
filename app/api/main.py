@@ -26,7 +26,6 @@ app.add_middleware(RequestCapture)
 app.add_middleware(RateLimiter)
 # END MIDDLEWARE
 
-# TODO - eventually refactor this to handle specific exceptions
 @app.exception_handler(WrappedException)
 async def wrapped_exception_handler(request: Request, exc: WrappedException) -> JSONResponse:
     L.exception(exc)

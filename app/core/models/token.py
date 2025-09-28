@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone, timedelta
+from enum import Enum
 
 from starlette.requests import Request
 from sqlalchemy import String, BIGINT, Integer, TIMESTAMP, select
@@ -9,6 +10,10 @@ from ..db.session import get_session
 
 class Base(DeclarativeBase):
     pass
+
+class TokenStatus(Enum):
+    ACTIVE = 1
+    DEACTIVATED = 2
 
 class Token(Base):
     __tablename__ = "CORE_TOKEN"
@@ -64,7 +69,6 @@ class Token(Base):
 
         token = str(uuid.uuid4())
         ip = headers.get("host")
-        status = -1
         created = datetime.now(timezone.utc)
         expiration = created + timedelta(days=90)
 
@@ -73,7 +77,7 @@ class Token(Base):
             T = Token(
                 TOKEN=token,
                 IP_ADDRESS=ip,
-                STATUS=status,
+                STATUS=TokenStatus.ACTIVE,
                 CREATED=created,
                 EXPIRATION=expiration
             )
@@ -81,7 +85,7 @@ class Token(Base):
                 session.add(T)
             return T
         finally:
-            session.close()
+            await session.close()
 
     @staticmethod
     async def find_by_token(token:str):
