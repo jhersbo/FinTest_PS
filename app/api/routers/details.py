@@ -1,12 +1,14 @@
 import json
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Header, Request
+from fastapi import APIRouter, HTTPException, Header, Request, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.clients.polygon_client import PolygonClient
 from app.utils.logger import get_logger
 from .utils.security import auth
+from app.core.db.session import inject_db
 
 # CLIENTS
 P = PolygonClient()

@@ -1,8 +1,13 @@
 from functools import wraps
+from typing import Annotated
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from app.api.middleware.request_capture import get_request
+from app.core.db.session import get_session
+from app.core.models.token import Token
 
 def auth(fn):
     """
@@ -22,6 +27,7 @@ def auth(fn):
         *args, 
         **kwargs
     ):
+        token = await Token.find_by_token("1234567890")
         # TODO - eventually implement per-endpoint authentication based on request, etc...
         req = get_request()
         if True is False:

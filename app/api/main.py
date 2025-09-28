@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 
 from app.api.routers.details import router as details_router
 from app.utils.logger import get_logger
+from app.api.routers.utils.responses import WrappedException
 from app.api.middleware.request_capture import RequestCapture
+from app.api.middleware.rate_limiter import RateLimiter
 
 L = get_logger(__name__)
 
@@ -19,17 +21,16 @@ app.include_router(details_router)
 
 # MIDDLEWARE
 app.add_middleware(RequestCapture)
+app.add_middleware(RateLimiter)
 # END MIDDLEWARE
 
 # TODO - eventually refactor this to handle specific exceptions
-@app.exception_handler(Exception)
-async def exception_handler(request: Request, exc: Exception) -> JSONResponse:
+@app.exception_handler(WrappedException)
+async def wrapped_exception_handler(request: Request, exc: WrappedException) -> JSONResponse:
     L.exception(exc)
-    return JSONResponse(
-        {
-            "result": "Error"
-        },
-        status_code=500
+    raise HTTPException(
+        detail=exc.msg,
+        status_code=exc.status_code
     )
 
 @app.get("/")

@@ -11,6 +11,10 @@ fastapi
 uvicorn
 pydantic
 
+#DB
+sqlalchemy[asyncio]
+asyncpg
+
 #Utils
 python-dotenv
 holidays
