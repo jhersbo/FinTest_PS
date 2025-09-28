@@ -1,5 +1,3 @@
-# PredictionService API #
-
 ## Overview
 A comprehensive US stock market prediction service that analyzes market indicators, sentiment, and technical analysis to provide trade predictions and insights. Built as a standalone analysis service that can be consumed by web applications and other clients.
 
