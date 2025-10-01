@@ -1,10 +1,13 @@
 from functools import wraps
+from typing import Callable
+
+from fastapi.responses import JSONResponse
 
 from app.api.middleware.request_capture import get_request
 from app.core.models.token import Token
 from .responses import BadTokenException
 
-def auth(fn):
+def auth(fn) -> Callable[...]:
     """
     Decorator which contains basic client permissions/authentication
     functionality which can be added to any endpoint.
@@ -21,7 +24,7 @@ def auth(fn):
     async def w(
         *args, 
         **kwargs
-    ):
+    ) ->  JSONResponse:
         # AUTHENTICATE API TOKEN
         req = get_request()
         x_api_key = req.headers.get("x-api-key")
