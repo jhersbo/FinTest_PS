@@ -7,7 +7,7 @@ from app.api.middleware.request_capture import get_request
 from app.core.models.token import Token
 from .responses import BadTokenException
 
-def auth(fn) -> Callable[...]:
+def auth(fn):
     """
     Decorator which contains basic client permissions/authentication
     functionality which can be added to any endpoint.

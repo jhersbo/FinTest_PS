@@ -26,8 +26,8 @@ async def post_token():
     return JSONResponse(
         {
             "result": "Ok",
-            "token": token.TOKEN,
-            "expiration": str(token.EXPIRATION)
+            "token": token.token,
+            "expiration": str(token.expiration)
         },
         status_code=status.HTTP_201_CREATED
     )

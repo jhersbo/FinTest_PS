@@ -16,41 +16,41 @@ class TokenStatus(Enum):
     DEACTIVATED = 2
 
 class Token(Base):
-    __tablename__ = "CORE_TOKEN"
+    __tablename__ = "core_token"
 
-    ID:Mapped[BIGINT] = mapped_column(
+    id:Mapped[BIGINT] = mapped_column(
         BIGINT, 
         primary_key=True,
         unique=True,
         nullable=False
     )
-    TOKEN:Mapped[String] = mapped_column(
+    token:Mapped[String] = mapped_column(
         String, 
         unique=True,
         nullable=False
     )
-    IP_ADDRESS:Mapped[String] = mapped_column(
+    ip_address:Mapped[String] = mapped_column(
         String,
         nullable=False
     )
-    STATUS:Mapped[Integer] = mapped_column(
+    status:Mapped[Integer] = mapped_column(
         Integer,
         nullable=False
     )
-    CREATED:Mapped[TIMESTAMP] = mapped_column(
+    created:Mapped[TIMESTAMP] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False
     )
-    EXPIRATION:Mapped[TIMESTAMP] = mapped_column(
+    expiration:Mapped[TIMESTAMP] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False
     )
 
     def __repr__(self) -> str:
-        return f"ID: {self.ID}\nTOKEN: {self.TOKEN}\nIP_ADDRESS: {self.IP_ADDRESS}\nSTATUS: {self.STATUS}\nCREATED: {self.CREATED}\nEXPIRATION: {self.EXPIRATION}"
+        return f"ID: {self.id}\nTOKEN: {self.token}\nIP_ADDRESS: {self.ip_address}\nSTATUS: {self.status}\nCREATED: {self.created}\nEXPIRATION: {self.expiration}"
     
     def is_valid(self):
-        if datetime.now(tz=timezone.utc) >= self.EXPIRATION:
+        if datetime.now(tz=timezone.utc) >= self.expiration:
             return False
         return True
 
@@ -75,11 +75,11 @@ class Token(Base):
         session = await get_session()
         try:
             T = Token(
-                TOKEN=token,
-                IP_ADDRESS=ip,
-                STATUS=TokenStatus.ACTIVE,
-                CREATED=created,
-                EXPIRATION=expiration
+                token=token,
+                ip_address=ip,
+                status=TokenStatus.ACTIVE.value,
+                created=created,
+                expiration=expiration
             )
             async with session.begin():
                 session.add(T)
@@ -94,7 +94,7 @@ class Token(Base):
         """
         session = await get_session()
         try:
-            stmt = select(Token).where(Token.TOKEN == token)
+            stmt = select(Token).where(Token.token == token)
             return await session.scalar(statement=stmt)
         finally:
             await session.close()
