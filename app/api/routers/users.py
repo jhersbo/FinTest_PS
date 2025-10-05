@@ -1,13 +1,13 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 
-from app.utils.logger import get_logger
+from app.core.utils.logger import get_logger
 from app.core.models.token import Token
 from ..middleware.request_capture import get_request
 
 # SETUP
 router = APIRouter(
-    prefix="/client"
+    prefix="/users"
 )
 L = get_logger(__name__)
 # END SETUP

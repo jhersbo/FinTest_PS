@@ -6,7 +6,7 @@ import pandas as pd
 from polygon import RESTClient
 import numpy as np
 
-import app.utils.dates as dates
+import app.core.utils.dates as dates
 from app.services.clients.client_utils import ratelimit
 
 L = logging.getLogger(__name__)
