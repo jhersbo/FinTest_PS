@@ -81,6 +81,7 @@ async def post_seedTickers() -> JSONResponse:
         {
             "result": "Ok",
             "subject": f"{created} records created"
-        }
+        },
+        status_code=status.HTTP_201_CREATED
     )
     
