@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, TIMESTAMP, BOOLEAN
+from sqlalchemy import String, TIMESTAMP, BOOLEAN, select
 
 from ...core.db.session import batch_create, get_session
 from ...core.models.entity import Entity
@@ -44,6 +44,34 @@ class StockTicker(Entity):
     )
 
     @staticmethod
+    async def findByTicker(ticker:str) -> "StockTicker":
+        """
+        Finds StockTicker object by ticker value
+        """
+        session = await get_session()
+        try:
+            stmt = select(StockTicker).where(StockTicker.ticker == ticker)
+            return await session.scalar(statement=stmt)
+        finally:
+            await session.close()
+
+    @staticmethod
+    async def findAll() -> list["StockTicker"]:
+        """
+        Finds all tickers
+        """
+        session = await get_session()
+        try:
+            stmt = select(StockTicker)
+            tups = await session.execute(statement=stmt)
+            result = []
+            for t in tups:
+                result.append(t[0])
+            return result
+        finally:
+            await session.close()
+
+    @staticmethod
     async def create(ticker:str, name:str, currency:str, active:bool=True) -> "StockTicker":
         ts = datetime.now(timezone.utc)
         session = await get_session()
@@ -65,3 +93,23 @@ class StockTicker(Entity):
     @staticmethod
     async def batch_create(tickers:list["StockTicker"]) -> int:
         return await batch_create(tickers)
+    
+    async def update(self) -> bool:
+        session = await get_session()
+        try:
+            async with session.begin():
+                session.add(self)
+        finally:
+            await session.close()
+
+    def equals(self, obj:"StockTicker"):
+        if type(self) != type(obj):
+            return False
+        return (
+            self.ticker == obj.ticker 
+            and self.name == obj.name 
+            and self.primary_exchange == obj.primary_exchange 
+            and self.currency == obj.currency 
+            and self.active == obj.active
+        )
+        

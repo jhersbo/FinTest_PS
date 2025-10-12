@@ -56,12 +56,16 @@ async def post_saveDataDaily(ticker:str) -> JSONResponse:
         status_code=status.HTTP_201_CREATED
     )
 
-@router.post("/seedtickers")
+@router.post("/seedtickers/{type}")
 @auth
-async def post_seedTickers() -> JSONResponse:
-    tickers = await P.getTickerInfo("stocks")
+async def post_seedTickers(type:str) -> JSONResponse:
+    existing_tickers = await StockTicker.findAll()
+
+    tickers = await P.getTickerInfo(type)
     ts = datetime.datetime.now(datetime.timezone.utc)
     to_create = []
+    update_count = 0
+    audit_count = 0
     for obj in tickers:
         T = StockTicker(
             ticker=obj["ticker"],
@@ -73,14 +77,37 @@ async def post_seedTickers() -> JSONResponse:
             created=ts,
             type=obj["type"]
         )
-        # TODO implement logic to not overwrite tickers? Or should it only be current?
-        to_create.append(T)
+
+        found = None
+        for i, ex in enumerate(existing_tickers):
+            if T.ticker == ex.ticker:
+                found = existing_tickers[i]
+                break
+        if found is None:
+            to_create.append(T)
+        else:
+            if not T.equals(found):
+                found.ticker = T.ticker
+                found.name = T.name
+                found.primary_exchange = T.primary_exchange
+                found.currency = T.currency
+                found.active = T.active
+
+                update_count += 1
+            found.last_audit = ts
+            audit_count += 1
+
+            await found.update() # TODO - convert to a batch update
     
     created = await StockTicker.batch_create(to_create)
     return JSONResponse(
         {
             "result": "Ok",
-            "subject": f"{created} records created"
+            "subject": {
+                "created": created,
+                "updated": update_count,
+                "audited": audit_count
+            }
         },
         status_code=status.HTTP_201_CREATED
     )

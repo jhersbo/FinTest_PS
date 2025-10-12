@@ -26,11 +26,21 @@ class PolygonClient():
     @ratelimit()
     async def getTickerInfo(self, market:str, active:bool=True, order:str="asc", limit:int=1000, sort_field:str="ticker") -> list[dict[str,str]]:
         """
-        Returns basic information for each tradable ticker for a given market. As of now, we can only make 3 requests per minute,
+        Returns basic information for each tradable ticker for a given market. 
+        As of now, we can make a limited number of requests per minute,
         so each call to the polygon api is rate limited quite slowly.
         """
+        valid = [
+            "stocks",
+            "crypto",
+            "fx",
+            "otc",
+            "indices"
+        ]
         if market is None:
             raise ValueError("Market type must be provided")
+        if valid.count(market) == 0:
+            raise ValueError("Invalid market type")
         PATH = "v3/reference/tickers"
         query = {
             "market": market,
@@ -40,7 +50,7 @@ class PolygonClient():
             "sort": sort_field
         }
         url = self.__build_url__(path=PATH, query=query)
-        return await self.get_and_append([], url, data_path="results", next_path="next_url", rl=20)
+        return await self.get_and_append([], url, data_path="results", next_path="next_url", rl=10)
 
 
 
