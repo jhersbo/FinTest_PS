@@ -35,19 +35,20 @@ async def query(q: str):
     """
     pass
 
-async def batch_create(objects:list[DeclarativeBase]):
+async def batch_create(objects:list[DeclarativeBase]) -> int:
+    created = 0
     session = await get_session()
     try:
         async with session.begin():
             payload = []
-            
-            j = 0
             for i in range(len(objects)):
+                created += 1
                 payload.append(objects[i])
-                j += 1
-                if j == BATCH_CHUNK_SIZE or i == len(objects) - 1:
+                if (i % BATCH_CHUNK_SIZE == 0) or i == len(objects) - 1:
                     session.add_all(payload)
                     payload = []
-            session.commit()
+            await session.commit()
     finally:
         await session.close()
+
+    return created

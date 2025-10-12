@@ -1,4 +1,9 @@
 import asyncio
+from requests import get
+
+from app.core.utils.logger import get_logger
+
+L = get_logger(__name__)
 
 def ratelimit(rl_limit:float=0.1):
     """

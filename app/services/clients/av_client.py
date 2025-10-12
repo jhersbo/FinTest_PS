@@ -35,11 +35,14 @@ class AVClient():
         }
         url = self.__build_url__(query)
         json = get(url=url).json()
-        print(json)
         df = pd.DataFrame.from_dict(json["Time Series (Daily)"], orient="index")
         df = df.sort_index(ascending=False).reset_index().rename(columns={"index": "date"})
         df.columns = df.columns.str.replace(pat=r"^\d+\.\s*", repl="", regex=True)
-        print(df)
+        df["open"] = pd.to_numeric(df["open"], errors="coerce")
+        df["high"] = pd.to_numeric(df["high"], errors="coerce")
+        df["low"] = pd.to_numeric(df["low"], errors="coerce")
+        df["close"] = pd.to_numeric(df["close"], errors="coerce")
+        df["volume"] = pd.to_numeric(df["volume"], errors="coerce")
 
         return df
 

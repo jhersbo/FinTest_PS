@@ -7,15 +7,12 @@ from sqlalchemy import String, BIGINT, Integer, TIMESTAMP, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from ..db.session import get_session
-
-class Base(DeclarativeBase):
-    pass
-
+from ..models.entity import Entity
 class TokenStatus(Enum):
     ACTIVE = 1
     DEACTIVATED = 2
 
-class Token(Base):
+class Token(Entity):
     __tablename__ = "core_token"
 
     id:Mapped[BIGINT] = mapped_column(
@@ -45,9 +42,6 @@ class Token(Base):
         TIMESTAMP(timezone=True),
         nullable=False
     )
-
-    def __repr__(self) -> str:
-        return f"ID: {self.id}\nTOKEN: {self.token}\nIP_ADDRESS: {self.ip_address}\nSTATUS: {self.status}\nCREATED: {self.created}\nEXPIRATION: {self.expiration}"
     
     def is_valid(self):
         if datetime.now(tz=timezone.utc) >= self.expiration:

@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routers.details import router as details_router
 from app.api.routers.users import router as users_router
+from app.api.routers.admin import router as admin_router
 from app.core.utils.logger import get_logger
 from app.api.routers.utils.responses import WrappedException
 from app.api.middleware.request_capture import RequestCapture
@@ -21,6 +22,7 @@ app = FastAPI(
 # ROUTERS
 app.include_router(users_router)
 app.include_router(details_router)
+app.include_router(admin_router)
 # END ROUTERS
 
 # MIDDLEWARE
