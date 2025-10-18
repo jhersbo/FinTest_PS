@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, TIMESTAMP, BOOLEAN, select
+from sqlalchemy import String, TIMESTAMP, BOOLEAN, select, update
 
 from ...core.db.session import batch_create, get_session
 from ...core.models.entity import Entity
@@ -94,7 +94,7 @@ class StockTicker(Entity):
     async def batch_create(tickers:list["StockTicker"]) -> int:
         return await batch_create(tickers)
     
-    async def update(self) -> bool:
+    async def update(self) -> None:
         session = await get_session()
         try:
             async with session.begin():

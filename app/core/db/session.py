@@ -48,7 +48,6 @@ async def batch_create(objects:list[DeclarativeBase]) -> int:
                     session.add_all(payload)
                     payload = []
             await session.commit()
+        return created
     finally:
         await session.close()
-
-    return created
