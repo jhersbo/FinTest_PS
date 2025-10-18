@@ -1,9 +1,11 @@
-import dotenv
 import logging
 from logging import Logger
 from datetime import date
 
-env_logdir = dotenv.get_key(".env", "LOG_DIR")
+from ..config.config import get_config
+
+CONFIG = get_config()
+env_logdir = CONFIG.log_dir
 env_logdir = env_logdir if env_logdir is not None else "../logs"
 
 def get_logger(name:str="primary") -> Logger:

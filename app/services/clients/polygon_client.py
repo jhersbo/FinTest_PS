@@ -1,5 +1,4 @@
 from typing import Optional
-import dotenv
 from requests import get
 
 import pandas as pd
@@ -8,6 +7,7 @@ import numpy as np
 
 from app.services.clients.client_utils import ratelimit
 from app.core.utils.logger import get_logger
+from ...core.config.config import get_config
 
 L = get_logger(__name__)
 class PolygonClient():
@@ -18,7 +18,8 @@ class PolygonClient():
     URL_BASE = "https://api.polygon.io"
 
     def __init__(self) -> None:
-        self.KEY = dotenv.get_key(".env", "POLYGON_API_KEY")
+        CONFIG = get_config()
+        self.KEY = CONFIG.polygon_api_key
         if self.KEY is None: 
             raise Exception("No API key found")
         self.REST = RESTClient(self.KEY, verbose=True)
@@ -50,7 +51,7 @@ class PolygonClient():
             "sort": sort_field
         }
         url = self.__build_url__(path=PATH, query=query)
-        return await self.get_and_append([], url, data_path="results", next_path="next_url", rl=10)
+        return await self.get_and_append([], url, data_path="results", next_path="next_url", rl=20)
 
 
 

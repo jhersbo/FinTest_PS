@@ -4,7 +4,7 @@ from enum import Enum
 
 from starlette.requests import Request
 from sqlalchemy import String, BIGINT, Integer, TIMESTAMP, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.session import get_session
 from ..models.entity import Entity

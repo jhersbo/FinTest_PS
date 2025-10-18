@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, status
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 
@@ -15,7 +15,7 @@ from ..services.clients.av_client import AVClient
 L = get_logger(__name__)
 
 app = FastAPI(
-    title="Prediction Service",
+    title="FinTest Prediction Service",
     version="v0.0.0.1"
 )
 

@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 
 from ...core.utils.logger import get_logger
+from ...core.config.config import get_config
 from .client_utils import ratelimit
 
 L = get_logger(__name__)
@@ -17,7 +18,8 @@ class AVClient():
     QUERY_URL_BASE = "https://www.alphavantage.co/query?"
 
     def __init__(self):
-        self.KEY = get_key(".env", "ALPHA_VANTAGE_API_KEY")
+        CONFIG = get_config()
+        self.KEY = CONFIG.alpha_vantage_api_key
         if self.KEY is None:
             raise RuntimeError("No API key found for " + __name__)
    
