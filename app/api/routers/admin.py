@@ -9,11 +9,11 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 
 from app.core.utils.logger import get_logger
-from .utils.security import auth
-from ...services.models.stock_history import StockHistory
-from ...services.clients.av_client import AVClient
-from ...services.clients.polygon_client import PolygonClient
-from ...services.models.stock_tickers import StockTicker
+from ..utils.security import auth
+from ...services.data.models.stock_history import StockHistory
+from ...services.data.clients.av_client import AVClient
+from ...services.data.clients.polygon_client import PolygonClient
+from ...services.data.models.stock_tickers  import StockTicker
 
 # SETUP #
 router = APIRouter(

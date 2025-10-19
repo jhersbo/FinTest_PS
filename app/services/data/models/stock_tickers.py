@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, TIMESTAMP, BOOLEAN, select, update
 
-from ...core.db.session import batch_create, get_session
-from ...core.models.entity import Entity
+from ....core.db.session import batch_create, get_session
+from ....core.models.entity import Entity
 
 class StockTicker(Entity):
     __tablename__ = "stock_tickers"

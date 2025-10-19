@@ -1,6 +1,9 @@
+from enum import Enum
+from typing import Union
+
 from pydantic_settings import BaseSettings
 
-class AppConfig(BaseSettings):
+class EnvConfig(BaseSettings):
     # DB
     db_url:str
     db_user:str
@@ -10,6 +13,9 @@ class AppConfig(BaseSettings):
     db_name:str
     # LOGGING
     log_dir:str
+    # ARTIFACTS
+    obj_dir:str
+    mdl_dir:str
     # API KEYS
     alpha_vantage_api_key:str
     polygon_api_key:str
@@ -20,5 +26,11 @@ class AppConfig(BaseSettings):
     class Config:
         env_file = ".env"
 
-def get_config() -> AppConfig:
-    return AppConfig()
+class ConfigTypes(Enum):
+    ENV = "env"
+
+def get_config(type:ConfigTypes=ConfigTypes.ENV) -> Union[BaseSettings, None]:
+    if type == ConfigTypes.ENV:
+        return EnvConfig()
+    return None
+    

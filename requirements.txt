@@ -6,11 +6,16 @@ alpha_vantage
 requests
 polygon_api_client
 
+# Computation
+torch
+scikit-learn
+
 # FastAPI and web framework
 fastapi
 uvicorn
 pydantic
 pydantic-settings
+
 #DB
 sqlalchemy[asyncio]
 asyncpg

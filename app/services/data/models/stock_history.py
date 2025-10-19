@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import DATE, String, DOUBLE_PRECISION, BIGINT
+from sqlalchemy import DATE, String, DOUBLE_PRECISION, BIGINT, select
 
-from ...core.db.session import get_session, batch_create
-from ...core.models.entity import Entity
+from ....core.db.session import get_session, batch_create
+from ....core.utils.logger import get_logger
+from ....core.models.entity import Entity
+
+L = get_logger(__name__)
 
 class StockHistory(Entity):
     __tablename__ = "stock_history"
@@ -40,6 +43,22 @@ class StockHistory(Entity):
         BIGINT,
         nullable=False
     )
+
+    @staticmethod
+    async def find_by_ticker(ticker:str) -> list["StockHistory"]:
+        """
+        Finds StockHistory records by ticker
+        """
+        session = await get_session()
+        try:
+            stmt = select(StockHistory).where(StockHistory.ticker == ticker).order_by(StockHistory.date.desc())
+            tups =  await session.execute(statement=stmt)
+            result = []
+            for t in tups:
+                result.append(t[0])
+            return result
+        finally:
+            await session.close()
 
     @staticmethod
     async def batch_create(objects:list["StockHistory"]) -> int:
