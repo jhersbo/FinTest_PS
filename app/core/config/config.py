@@ -29,7 +29,7 @@ class EnvConfig(BaseSettings):
 class ConfigTypes(Enum):
     ENV = "env"
 
-def get_config(type:ConfigTypes=ConfigTypes.ENV) -> Union[BaseSettings, None]:
+def get_config(type:ConfigTypes=ConfigTypes.ENV) -> Union[EnvConfig, None]:
     if type == ConfigTypes.ENV:
         return EnvConfig()
     return None

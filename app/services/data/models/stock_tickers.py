@@ -72,6 +72,19 @@ class StockTicker(Entity):
             await session.close()
 
     @staticmethod
+    async def findAll(type:str) -> list["StockTicker"]:
+        session = await get_session()
+        try:
+            stmt = select(StockTicker).where(StockTicker.type == type)
+            tups = await session.execute(statement=stmt)
+            result = []
+            for t in tups:
+                result.append(t[0])
+            return result
+        finally:
+            await session.close()
+
+    @staticmethod
     async def create(ticker:str, name:str, currency:str, active:bool=True) -> "StockTicker":
         ts = datetime.now(timezone.utc)
         session = await get_session()

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.session import get_session
 from ..models.entity import Entity
+from ..models.globalid import GlobalId
 class TokenStatus(Enum):
     ACTIVE = 1
     DEACTIVATED = 2
@@ -68,7 +69,9 @@ class Token(Entity):
 
         session = await get_session()
         try:
+            gid = await GlobalId.allocate(Token.__tablename__)
             T = Token(
+                id=gid.id,
                 token=token,
                 ip_address=ip,
                 status=TokenStatus.ACTIVE.value,

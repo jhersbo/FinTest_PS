@@ -17,6 +17,8 @@ L = get_logger(__name__)
 
 class SimplePriceLSTM(Dataset):
 
+    NAME = "SimplePriceLSTM"
+
     def __init__(self, df:pd.DataFrame, ticker:str, seq_len:int=10, feature_cols:list[str]=None):
         self.seq_len = seq_len
         self.feature_cols = feature_cols or ['_open', 'high', 'low', 'close', 'volume']
@@ -25,14 +27,14 @@ class SimplePriceLSTM(Dataset):
         features = df[self.feature_cols].values
         self.scaler = MinMaxScaler()
         scaled = self.scaler.fit_transform(features)
-        joblib.dump(self.scaler, f"{get_config().obj_dir}/SimplePriceLSTM_{self.ticker}_scaler.pkl")
+        joblib.dump(self.scaler, f"{get_config().obj_dir}/{SimplePriceLSTM.NAME}_{self.ticker}_scaler.pkl")
         
         self.data = torch.tensor(scaled, dtype=torch.float32)
 
     def __len__(self):
         return len(self.data) - self.seq_len
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx:int):
         x = self.data[idx:idx + self.seq_len]
         y = self.data[idx + self.seq_len][3] 
         return x, y
@@ -50,7 +52,7 @@ class SimplePriceLSTM(Dataset):
         data_set = SimplePriceLSTM(df, ticker=ticker)
         data_loader = DataLoader(data_set, batch_size=32, shuffle=True)
 
-        model = LSTMModel(input_size=5)
+        model = LSTMModel(input_size=len(data_set.feature_cols))
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -67,7 +69,7 @@ class SimplePriceLSTM(Dataset):
                 total_loss += loss.item()
         L.info(f"Finished training with {total_loss} loss")
 
-        torch.save(model.state_dict(), f"{get_config().mdl_dir}/SimplePriceLSTM_{ticker}.pth")
+        torch.save(model.state_dict(), f"{get_config().mdl_dir}/{SimplePriceLSTM.NAME}_{ticker}.pth")
 
         return model
 

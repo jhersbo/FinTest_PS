@@ -1,3 +1,5 @@
+from datetime import datetime, date as d
+
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DATE, String, DOUBLE_PRECISION, BIGINT, select
 
@@ -52,6 +54,25 @@ class StockHistory(Entity):
         session = await get_session()
         try:
             stmt = select(StockHistory).where(StockHistory.ticker == ticker).order_by(StockHistory.date.desc())
+            tups =  await session.execute(statement=stmt)
+            result = []
+            for t in tups:
+                result.append(t[0])
+            return result
+        finally:
+            await session.close()
+
+    @staticmethod
+    async def find_by_ticker_date(ticker:str, date:d) -> list["StockHistory"]:
+        """
+        Finds StockHistory records by ticker prior to a passed date
+        """
+        session = await get_session()
+        try:
+            stmt = select(StockHistory).where(
+                StockHistory.ticker == ticker 
+                and StockHistory.date <= date
+                ).order_by(StockHistory.date.desc())
             tups =  await session.execute(statement=stmt)
             result = []
             for t in tups:

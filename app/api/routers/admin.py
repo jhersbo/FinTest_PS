@@ -31,8 +31,8 @@ AV = AVClient()
 @router.post("/savedata/daily/{ticker}")
 @auth
 async def post_saveDataDaily(ticker:str) -> JSONResponse:
-
     df = await AV.time_series_daily(symbol=ticker, full=True)
+    exist = await StockHistory.find_by_ticker(ticker)
     to_create = []
     for row in df.itertuples():
         s = StockHistory(
@@ -45,9 +45,66 @@ async def post_saveDataDaily(ticker:str) -> JSONResponse:
             close=row.close,
             volume=row.volume
         )
-        to_create.append(s)
+
+        found = False
+        for sh in exist:
+            if sh.decode == s.decode:
+                found = True
+
+        if not found:
+            to_create.append(s)
     
     created = await StockHistory.batch_create(to_create)
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": f"{created} records created"
+        },
+        status_code=status.HTTP_201_CREATED
+    )
+
+@router.post("/savedata/daily")
+@auth
+async def post_saveAllDataDaily() -> JSONResponse:
+
+    tickers = await StockTicker.findAll("CS")
+    created = 0
+    t = 0
+    for ticker in tickers:
+        # TODO: remove
+        L.info(f"{t} of {len(tickers)}")
+        t += 1
+        ##
+        df = None
+        try:
+            df = await AV.time_series_daily(symbol=ticker, full=True)
+        except Exception as e:
+            continue
+        exist = await StockHistory.find_by_ticker(ticker)
+        to_create = []
+        for row in df.itertuples():
+            s = StockHistory(
+                decode=f"{row.date}|{ticker}",
+                date=datetime.date.fromisoformat(row.date),
+                ticker=ticker,
+                _open=row.open,
+                high=row.high,
+                low=row.low,
+                close=row.close,
+                volume=row.volume
+            )
+
+            found = False
+            for sh in exist:
+                if sh.decode == s.decode:
+                    found = True
+
+            if not found:
+                to_create.append(s)
+        
+        created = await StockHistory.batch_create(to_create)
+
+
     return JSONResponse(
         {
             "result": "Ok",

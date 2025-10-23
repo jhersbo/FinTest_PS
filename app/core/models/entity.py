@@ -1,4 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase
+import pandas as pd
 
 class Entity(DeclarativeBase):
     """
@@ -31,3 +32,5 @@ class Entity(DeclarativeBase):
                 return False
             
         return True
+    
+    def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
