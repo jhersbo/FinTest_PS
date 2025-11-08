@@ -1,9 +1,9 @@
 from sqlalchemy import BIGINT, String, JSON, BOOLEAN, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..models.entity import Entity
-from ..models.globalid import GlobalId
-from ..db.session import get_session
+from ...core.models.entity import Entity
+from ...core.models.globalid import GlobalId
+from ...core.db.session import get_session
 
 class ModelType(Entity):
     __tablename__ = "model_type"

@@ -13,7 +13,7 @@ from ...services.data.models.stock_history import StockHistory
 from ...services.data.clients.av_client import AVClient
 from ...services.data.clients.polygon_client import PolygonClient
 from ...services.data.models.stock_tickers  import StockTicker
-from ...core.models.model_type import ModelType
+from ...services.core.model_type import ModelType
 
 # SETUP #
 router = APIRouter(
