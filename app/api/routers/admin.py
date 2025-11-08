@@ -190,7 +190,9 @@ async def post_seedModels() -> JSONResponse:
             created += 1
         else:
             if not m.equals(found):
-                await m.update()
+                found.config = m.config
+                found.is_available = m.is_available
+                await found.update()
                 updated += 1
     
     return JSONResponse(
