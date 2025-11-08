@@ -6,7 +6,6 @@ import datetime
 
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-import pandas as pd
 
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
@@ -14,6 +13,7 @@ from ...services.data.models.stock_history import StockHistory
 from ...services.data.clients.av_client import AVClient
 from ...services.data.clients.polygon_client import PolygonClient
 from ...services.data.models.stock_tickers  import StockTicker
+from ...core.models.model_type import ModelType
 
 # SETUP #
 router = APIRouter(
@@ -168,4 +168,38 @@ async def post_seedTickers(type:str) -> JSONResponse:
         },
         status_code=status.HTTP_201_CREATED
     )
+
+@router.post("/seedmodels")
+@auth
+async def post_seedModels() -> JSONResponse:
+    models:list[ModelType] = [
+        ModelType(
+            model_name="SimplePriceLSTM",
+            config={},
+            is_available=True
+        )
+    ]
+
+    created = 0
+    updated = 0
+
+    for m in models:
+        found = await ModelType.find_by_name(m.model_name)
+        if not found:
+            await ModelType.create(m.model_name, m.config, m.is_available)
+            created += 1
+        else:
+            if not m.equals(found):
+                await m.update()
+                updated += 1
     
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "created": created,
+                "updated": updated
+            }
+        },
+        status_code=status.HTTP_201_CREATED
+    )

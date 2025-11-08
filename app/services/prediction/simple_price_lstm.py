@@ -22,7 +22,7 @@ def __prep_sequence__(df:pd.DataFrame, feature_cols:list[str], seq_len:int, scal
     seq = scaled[:seq_len]
     return torch.tensor(seq, dtype=torch.float32).unsqueeze(0)
 
-def __predict_next__(model, input_tensor:torch.Tensor) -> float:
+def __predict_next__(model:LSTMModel, input_tensor:torch.Tensor) -> float:
     with torch.no_grad():
         output = model(input_tensor)
         return output.item()
@@ -37,8 +37,6 @@ async def predict(ticker:str, seq_length:int, artifact:str) -> float: # TODO - f
     df = pd.DataFrame([d.__dict__ for d in data])
 
     scaler:MinMaxScaler = joblib.load(f"{get_config().obj_dir}/SimplePriceLSTM_{ticker}_scaler.pkl")
-    # scaler:MinMaxScaler = MinMaxScaler()
-    # scaler.fit(df[features].values)
 
     # Load model
     model = __load_model__(path=path, input_size=input_size)
