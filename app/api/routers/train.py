@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
 from ..utils.responses import WrappedException
-from ...services.training.simple_price_lstm import SimplePriceLSTM
+from ...ml.training.simple_price_lstm import SimplePriceLSTM
 
 # SETUP #
 router = APIRouter(

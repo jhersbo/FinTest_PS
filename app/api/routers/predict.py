@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
-from ...services.prediction.simple_price_lstm import predict
+from ...ml.prediction.simple_price_lstm import predict
 
 # SETUP #
 router = APIRouter(

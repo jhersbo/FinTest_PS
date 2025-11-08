@@ -9,11 +9,11 @@ from fastapi.responses import JSONResponse
 
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
-from ...services.data.models.stock_history import StockHistory
-from ...services.data.clients.av_client import AVClient
-from ...services.data.clients.polygon_client import PolygonClient
-from ...services.data.models.stock_tickers  import StockTicker
-from ...services.core.models.model_type import ModelType
+from ...ml.data.models.stock_history import StockHistory
+from ...ml.data.clients.av_client import AVClient
+from ...ml.data.clients.polygon_client import PolygonClient
+from ...ml.data.models.stock_tickers  import StockTicker
+from ...ml.core.models.model_type import ModelType
 
 # SETUP #
 router = APIRouter(
