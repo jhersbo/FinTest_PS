@@ -5,9 +5,9 @@ import pandas as pd
 from polygon import RESTClient
 import numpy as np
 
-from app.services.clients.client_utils import ratelimit
+from .client_utils import ratelimit
 from app.core.utils.logger import get_logger
-from ...core.config.config import get_config
+from ....core.config.config import get_config
 
 L = get_logger(__name__)
 class PolygonClient():

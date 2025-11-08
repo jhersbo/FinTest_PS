@@ -1,6 +1,7 @@
 venv/
 .env
 dummy/
+artifacts/
 
 # Python
 __pycache__/

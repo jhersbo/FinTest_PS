@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, TIMESTAMP, BOOLEAN, select, update
 
-from ...core.db.session import batch_create, get_session
-from ...core.models.entity import Entity
+from ....core.db.session import batch_create, get_session
+from ....core.models.entity import Entity
 
 class StockTicker(Entity):
     __tablename__ = "stock_tickers"
@@ -63,6 +63,19 @@ class StockTicker(Entity):
         session = await get_session()
         try:
             stmt = select(StockTicker)
+            tups = await session.execute(statement=stmt)
+            result = []
+            for t in tups:
+                result.append(t[0])
+            return result
+        finally:
+            await session.close()
+
+    @staticmethod
+    async def findAll(type:str) -> list["StockTicker"]:
+        session = await get_session()
+        try:
+            stmt = select(StockTicker).where(StockTicker.type == type)
             tups = await session.execute(statement=stmt)
             result = []
             for t in tups:

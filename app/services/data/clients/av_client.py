@@ -4,8 +4,8 @@ from typing import Optional
 
 import pandas as pd
 
-from ...core.utils.logger import get_logger
-from ...core.config.config import get_config
+from ....core.utils.logger import get_logger
+from ....core.config.config import get_config
 from .client_utils import ratelimit
 
 L = get_logger(__name__)

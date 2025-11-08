@@ -3,7 +3,7 @@ from starlette.requests import Request
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from ...api.routers.utils.responses import WrappedException
+from ..utils.responses import WrappedException
 
 class RateLimiter(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
