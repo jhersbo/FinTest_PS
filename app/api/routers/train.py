@@ -7,7 +7,9 @@ from pydantic import BaseModel
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
 from ..utils.responses import WrappedException
-from ...ml.training.simple_price_lstm import SimplePriceLSTM
+from ...batch.queue import RedisQueue
+from ...ml.training.simple_price_lstm import Trainer
+
 
 # SETUP #
 router = APIRouter(
@@ -28,12 +30,24 @@ class TickerTrainPayload(BaseModel):
 
 @router.post("/")
 @auth
-async def post_(payload:TickerTrainPayload) -> JSONResponse: #TODO this can eventually become a means to trigger a job    
-    await SimplePriceLSTM.train(payload.ticker, num_epochs=payload.epochs)
+async def post_(payload:TickerTrainPayload) -> JSONResponse:
+    config = {
+        "ticker": payload.ticker,
+        "epochs": payload.epochs
+    }
+    job_class = Trainer()
+    job_class.configure(config)
+
+    Q = RedisQueue.get_queue()
+    job = Q.put(job_class)
 
     return JSONResponse(
         {
-            "result": "Ok"
+            "result": "Ok",
+            "subject": {
+                "job_id": f"{job.id}",
+                "job_status": f"{job.get_status()}"
+            }
         },
-        status_code=status.HTTP_201_CREATED
+        status_code=status.HTTP_202_ACCEPTED
     )
