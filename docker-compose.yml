@@ -30,7 +30,7 @@ services:
       - "6379:6379"
   rq-worker:
     build: .
-    command: rq worker --url redis://redis:6379
+    command: rq worker seeder trainer --url redis://redis:6379 # TODO - eventually change to long/short queue
     volumes:
       - .:/app
     env_file:

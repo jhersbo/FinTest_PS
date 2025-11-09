@@ -38,7 +38,7 @@ async def post_(payload:TickerTrainPayload) -> JSONResponse:
     job_class = Trainer()
     job_class.configure(config)
 
-    Q = RedisQueue.get_queue()
+    Q = RedisQueue.get_queue("trainer")
     job = Q.put(job_class)
 
     return JSONResponse(

@@ -11,7 +11,10 @@ from .job import Job
 class RedisQueue:
     REDIS_PORT = 6379
     REDIS_SERVICE = "redis"
-    QUEUE_CACHE = {}
+    QUEUE_CACHE = {
+        "seeder": None,
+        "trainer": None
+    }
     DEFAULT_TIMEOUT = 1000
 
     def __init__(self, queue: Queue):

@@ -14,7 +14,9 @@ from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.data.models.stock_tickers  import StockTicker
 from ...ml.core.models.model_type import ModelType
-from ...core.db.entity_finder import EntityFinder
+from ...ml.training.simple_price_lstm import Trainer
+from ...ml.data.batch.seeders import SeedTickers
+from ...batch.redis_queue import RedisQueue
 
 # SETUP #
 router = APIRouter(
@@ -117,63 +119,29 @@ async def post_saveAllDataDaily() -> JSONResponse:
 @router.post("/seedtickers/{type}")
 @auth
 async def post_seedTickers(type:str) -> JSONResponse:
-    existing_tickers = await StockTicker.findAll()
+    config = {
+        "type": type
+    }
+    job = SeedTickers()
+    job.configure(config)
 
-    tickers = await P.getTickerInfo(type)
-    ts = datetime.datetime.now(datetime.timezone.utc)
-    to_create = []
-    update_count = 0
-    audit_count = 0
-    for obj in tickers:
-        T = StockTicker(
-            ticker=obj["ticker"],
-            name=obj["name"],
-            primary_exchange=obj["primary_exchange"],
-            currency=obj["currency_name"],
-            active=obj["active"],
-            last_audit=ts,
-            created=ts,
-            type=obj["type"]
-        )
+    Q = RedisQueue.get_queue("seeder")
+    rj = Q.put(job)
 
-        found = None
-        for i, ex in enumerate(existing_tickers):
-            if T.ticker == ex.ticker:
-                found = existing_tickers[i]
-                break
-        if found is None:
-            to_create.append(T)
-        else:
-            if not T.equals(found):
-                found.ticker = T.ticker
-                found.name = T.name
-                found.primary_exchange = T.primary_exchange
-                found.currency = T.currency
-                found.active = T.active
-
-                update_count += 1
-            found.last_audit = ts
-            audit_count += 1
-
-            await found.update() # TODO - convert to a batch update
-    
-    created = await StockTicker.batch_create(to_create)
     return JSONResponse(
         {
             "result": "Ok",
             "subject": {
-                "created": created,
-                "updated": update_count,
-                "audited": audit_count
+                "job_status":rj.get_status(),
+                "job_id":rj.get_id()
             }
         },
-        status_code=status.HTTP_201_CREATED
+        status_code=status.HTTP_202_ACCEPTED
     )
 
 @router.post("/seedmodels")
 @auth
 async def post_seedModels() -> JSONResponse:
-    from ...ml.training.simple_price_lstm import Trainer
 
     models:list[ModelType] = [
         ModelType(
@@ -199,8 +167,6 @@ async def post_seedModels() -> JSONResponse:
                 found.trainer_name = m.trainer_name
                 await found.update()
                 updated += 1
-
-        print(await EntityFinder.find_by_gid(found.gid))
     
     return JSONResponse(
         {
