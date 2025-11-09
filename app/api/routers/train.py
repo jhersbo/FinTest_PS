@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
 from ..utils.responses import WrappedException
-from ...batch.queue import RedisQueue
+from ...batch.redis_queue import RedisQueue
 from ...ml.training.simple_price_lstm import Trainer
 
 

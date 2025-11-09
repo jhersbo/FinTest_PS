@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
-from ..models.lstm import LSTMModel
+from ..model_defs.lstm import LSTMModel
 from ..data.models.stock_history import StockHistory
 from ...core.config.config import get_config
 from ...core.utils.logger import get_logger

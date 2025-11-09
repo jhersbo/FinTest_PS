@@ -9,7 +9,7 @@ from ..models.entity import Entity
 class GlobalId(Entity):
     __tablename__ = "global_id"
 
-    id:Mapped[BIGINT] = mapped_column(
+    gid:Mapped[BIGINT] = mapped_column(
         BIGINT,
         primary_key=True,
         unique=True,

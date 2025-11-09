@@ -9,7 +9,6 @@ from rq.job import Job as rqJob
 from .job import Job
 
 class RedisQueue:
-    # 'Static' properties
     REDIS_PORT = 6379
     REDIS_SERVICE = "redis"
     QUEUE_CACHE = {}
@@ -30,6 +29,3 @@ class RedisQueue:
             RedisQueue.QUEUE_CACHE[Q.name] = RQ
             return RQ
         return RedisQueue.QUEUE_CACHE.get(name)
-
-async def __async_wrapper__(fn, *args, **kwargs):
-    return await fn(*args, **kwargs)

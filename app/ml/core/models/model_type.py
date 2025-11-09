@@ -8,7 +8,7 @@ from ....core.db.session import get_session
 class ModelType(Entity):
     __tablename__ = "model_type"
 
-    id:Mapped[BIGINT] = mapped_column(
+    gid:Mapped[BIGINT] = mapped_column(
         BIGINT,
         primary_key=True,
         unique=True,
@@ -27,17 +27,22 @@ class ModelType(Entity):
         BOOLEAN,
         nullable=False
     )
+    trainer_name:Mapped[String] = mapped_column(
+        String,
+        nullable=False
+    )
 
     @staticmethod
-    async def create(model_name:str, config:dict={}, is_available:bool=True):
+    async def create(model_name:str, trainer_name:str, config:dict={}, is_available:bool=True):
         session = await get_session()
         try:
             gid = await GlobalId.allocate(ModelType.__tablename__)
             M = ModelType(
-                id=gid.id,
+                gid=gid.gid,
                 model_name=model_name,
                 config=config,
-                is_available=is_available
+                is_available=is_available,
+                trainer_name=trainer_name
             )
             async with session.begin():
                 session.add(M)
