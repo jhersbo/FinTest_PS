@@ -5,7 +5,8 @@ from sqlalchemy import BIGINT, String, JSON, TIMESTAMP, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ....core.db.session import get_session
-from ....core.models.entity import Entity
+# from ....core.models.entity import Entity
+from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
 from .model_type import ModelType
 
@@ -15,15 +16,15 @@ class RunStatus(Enum):
     FAILED = "FAILED"
 
 
-class TrainingRun(Entity):
+class TrainingRun(FindableEntity):
     __tablename__ = "training_run"
 
-    id:Mapped[BIGINT] = mapped_column(
-        BIGINT, 
-        primary_key=True,
-        unique=True,
-        nullable=False
-    )
+    # gid:Mapped[BIGINT] = mapped_column(
+    #     BIGINT, 
+    #     primary_key=True,
+    #     unique=True,
+    #     nullable=False
+    # )
     id_model_type:Mapped[BIGINT] = mapped_column(
         BIGINT,
         nullable=False

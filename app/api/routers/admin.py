@@ -14,6 +14,7 @@ from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.data.models.stock_tickers  import StockTicker
 from ...ml.core.models.model_type import ModelType
+from ...core.db.entity_finder import EntityFinder
 
 # SETUP #
 router = APIRouter(
@@ -172,11 +173,14 @@ async def post_seedTickers(type:str) -> JSONResponse:
 @router.post("/seedmodels")
 @auth
 async def post_seedModels() -> JSONResponse:
+    from ...ml.training.simple_price_lstm import Trainer
+
     models:list[ModelType] = [
         ModelType(
             model_name="SimplePriceLSTM",
             config={},
-            is_available=True
+            is_available=True,
+            trainer_name=Trainer().get_class_name()
         )
     ]
 
@@ -186,14 +190,17 @@ async def post_seedModels() -> JSONResponse:
     for m in models:
         found = await ModelType.find_by_name(m.model_name)
         if not found:
-            await ModelType.create(m.model_name, m.config, m.is_available)
+            await ModelType.create(m.model_name, m.trainer_name, m.config, m.is_available)
             created += 1
         else:
             if not m.equals(found):
                 found.config = m.config
                 found.is_available = m.is_available
+                found.trainer_name = m.trainer_name
                 await found.update()
                 updated += 1
+
+        print(await EntityFinder.find_by_gid(found.gid))
     
     return JSONResponse(
         {

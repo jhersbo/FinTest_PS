@@ -9,3 +9,6 @@ class Job:
 
     def configure(self, config) -> None:
         self.config = config
+
+    def get_class_name(self) -> str:
+        raise NotImplementedError("Child must implement this method")

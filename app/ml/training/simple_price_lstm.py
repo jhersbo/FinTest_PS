@@ -4,7 +4,6 @@ import asyncio
 
 import pandas as pd
 import numpy as np
-
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
@@ -24,6 +23,9 @@ class Trainer(Job):
 
     def run(self) -> None:
         return asyncio.run(SimplePriceLSTM.train(**self.config))
+    
+    def get_class_name(self):
+        return f"{__name__}.Trainer"
 
 class SimplePriceLSTM(Dataset):
 
@@ -82,4 +84,3 @@ class SimplePriceLSTM(Dataset):
         torch.save(model.state_dict(), f"{get_config().mdl_dir}/{SimplePriceLSTM.NAME}_{ticker}.pth")
 
         return model
-
