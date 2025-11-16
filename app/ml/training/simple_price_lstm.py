@@ -8,6 +8,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
+from app.batch.models.job_unit import JobUnit
+
 from ..model_defs.lstm import LSTMModel
 from ..data.models.stock_history import StockHistory
 from ...core.config.config import get_config
@@ -21,9 +23,10 @@ class Trainer(Job):
     def __init__(self):
         super().__init__()
 
-    def run(self) -> None:
-        return asyncio.run(SimplePriceLSTM.train(**self.config))
-    
+    def run(self, unit) -> None:
+        super().run(unit=unit)
+        asyncio.run(SimplePriceLSTM.train(unit=unit, **self.config))
+
     def get_class_name(self):
         return f"{__name__}.Trainer"
 
@@ -57,7 +60,7 @@ class SimplePriceLSTM(Dataset):
         return data
     
     @staticmethod
-    async def train(ticker:str, epochs:int=20, lr:float=0.001) -> LSTMModel:
+    async def train(unit:JobUnit, ticker:str, epochs:int=20, lr:float=0.001) -> LSTMModel:
         data = await SimplePriceLSTM.load(ticker=ticker)
         data = [r.__dict__ for r in data]
         df = pd.DataFrame(data)
@@ -80,7 +83,6 @@ class SimplePriceLSTM(Dataset):
                 optimizer.step()
                 total_loss += loss.item()
         L.info(f"Finished training with {total_loss} loss")
-
         torch.save(model.state_dict(), f"{get_config().mdl_dir}/{SimplePriceLSTM.NAME}_{ticker}.pth")
-
+        
         return model

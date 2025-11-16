@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 class EnvConfig(BaseSettings):
     # DB
     db_url:str
+    db_sync_url:str
     db_user:str
     db_password:str
     db_host:str

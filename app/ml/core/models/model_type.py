@@ -10,12 +10,6 @@ class ModelType(FindableEntity):
     __tablename__ = "model_type"
     __name__ = f"{__name__}.ModelType"
 
-    # gid:Mapped[BIGINT] = mapped_column(
-    #     BIGINT,
-    #     primary_key=True,
-    #     unique=True,
-    #     nullable=False
-    # )
     model_name:Mapped[String] = mapped_column(
         String,
         unique=True,
@@ -50,14 +44,6 @@ class ModelType(FindableEntity):
             M = ModelType()
 
             gid = await GlobalId.allocate(M)
-
-            # M = ModelType(
-            #     gid=gid.gid,
-            #     model_name=model_name,
-            #     config=config,
-            #     is_available=is_available,
-            #     trainer_name=trainer_name
-            # )
             M.gid = gid.gid
             M.model_name=model_name
             M.config=config

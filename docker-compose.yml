@@ -13,6 +13,7 @@ services:
       #### Set these values in a .env for local development ####
       # DB
       - DB_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - DB_SYNC_URL=postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
       # DIRS
       - LOG_DIR=${LOG_DIR}
       - OBJ_DIR=./artifacts/objects/
@@ -30,7 +31,7 @@ services:
       - "6379:6379"
   rq-worker:
     build: .
-    command: rq worker seeder trainer --url redis://redis:6379 # TODO - eventually change to long/short queue
+    command: rq worker long short --url redis://redis:6379 # TODO - eventually change to long/short queue
     volumes:
       - .:/app
     env_file:
@@ -39,6 +40,7 @@ services:
       #### Set these values in a .env for local development ####
       # DB
       - DB_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - DB_SYNC_URL=postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
       # DIRS
       - LOG_DIR=${LOG_DIR}
       - OBJ_DIR=./artifacts/objects/

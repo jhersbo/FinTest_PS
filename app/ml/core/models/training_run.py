@@ -10,7 +10,7 @@ from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
 from .model_type import ModelType
 
-class RunStatus(Enum):
+class RunStatus:
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     FAILED = "FAILED"
@@ -18,13 +18,8 @@ class RunStatus(Enum):
 
 class TrainingRun(FindableEntity):
     __tablename__ = "training_run"
+    __name__ = f"{__name__}.TrainingRun"
 
-    # gid:Mapped[BIGINT] = mapped_column(
-    #     BIGINT, 
-    #     primary_key=True,
-    #     unique=True,
-    #     nullable=False
-    # )
     id_model_type:Mapped[BIGINT] = mapped_column(
         BIGINT,
         nullable=False
@@ -59,16 +54,17 @@ class TrainingRun(FindableEntity):
 
         session = await get_session()
         try:
-            gid = await GlobalId.allocate(ModelType.__tablename__)
-            T = TrainingRun(
-                id=gid.id,
-                id_model_type=model.id,
-                start=None,
-                end=None,
-                data={},
-                status=RunStatus.PENDING.value,
-                created=now
-            )
+            T = TrainingRun()
+
+            gid = await GlobalId.allocate(T)
+            T.gid = gid.gid
+            T.id_model_type = model.id
+            T.start = None
+            T.end = None
+            T.data = {}
+            T.status = RunStatus.PENDING
+            T.created  = now
+
             async with session.begin():
                 session.add(T)
             return T
