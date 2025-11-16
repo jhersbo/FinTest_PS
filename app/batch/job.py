@@ -1,11 +1,11 @@
+from app.batch.models.job_unit import JobUnit
+
+
 class Job:
     config:dict[str, str] = {}
 
-    def run(self) -> None:
-        """
-            TODO - eventually pass in some sort of job unit reference
-        """
-        raise NotImplementedError("Child must implement this method")
+    def run(self, unit:JobUnit) -> None:
+        unit.start_job()
 
     def configure(self, config:dict) -> None:
         self.config = config
