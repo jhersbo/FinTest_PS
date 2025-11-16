@@ -10,8 +10,8 @@ class RedisQueue:
     REDIS_PORT = 6379
     REDIS_SERVICE = "redis"
     QUEUE_CACHE = {
-        "seeder": None,
-        "trainer": None
+        "long": None,
+        "short": None
     }
     DEFAULT_TIMEOUT = 1000
 
