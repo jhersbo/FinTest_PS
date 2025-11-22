@@ -71,10 +71,10 @@ class SimplePriceLSTM(Dataset):
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
+        total_loss = 0
         for epoch in range(epochs):
             L.info(f"Seq {epoch} of {epochs} epochs...")
             model.train()
-            total_loss = 0
             for x_batch, y_batch in data_loader:
                 optimizer.zero_grad()
                 y_pred = model(x_batch)
@@ -82,7 +82,9 @@ class SimplePriceLSTM(Dataset):
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
+                unit.accumulate("Total loss", loss.item())
         L.info(f"Finished training with {total_loss} loss")
+        unit.log(f"Finished training with {total_loss} loss")
         torch.save(model.state_dict(), f"{get_config().mdl_dir}/{SimplePriceLSTM.NAME}_{ticker}.pth")
         
         return model

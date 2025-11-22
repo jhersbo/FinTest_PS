@@ -34,7 +34,7 @@ AV = AVClient()
 @router.post("/savedata/daily/{ticker}")
 @auth
 async def post_saveDataDaily(ticker:str) -> JSONResponse:
-    df = await AV.time_series_daily(symbol=ticker, full=True)
+    df = await AV.time_series_daily(symbol=ticker)
     exist = await StockHistory.find_by_ticker(ticker)
     to_create = []
     for row in df.itertuples():
@@ -47,7 +47,7 @@ async def post_saveDataDaily(ticker:str) -> JSONResponse:
             low=row.low,
             close=row.close,
             volume=row.volume
-        )
+        ) 
 
         found = False
         for sh in exist:
