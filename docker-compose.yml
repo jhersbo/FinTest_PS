@@ -16,8 +16,8 @@ services:
       - DB_SYNC_URL=postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
       # DIRS
       - LOG_DIR=${LOG_DIR}
-      - OBJ_DIR=./artifacts/objects/
-      - MDL_DIR=./artifacts/model_output/
+      - OBJ_DIR=./artifacts/objects
+      - MDL_DIR=./artifacts/model_output
       # API KEYS
       - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
       - POLYGON_API_KEY=${POLYGON_API_KEY}

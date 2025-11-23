@@ -159,7 +159,7 @@ class JobUnit(FindableEntity):
         TIMESTAMP(timezone=True)
     )
 
-    # Dependent objects - TODO: I think we'll load these lazily
+    # Dependent objects
     _stats:dict[str, _JobStats] = {}
     _logs:list[_JobLog] = []
 

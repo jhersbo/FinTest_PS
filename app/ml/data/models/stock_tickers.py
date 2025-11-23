@@ -22,6 +22,10 @@ class StockTicker(Entity):
         String,
         nullable=False
     )
+    type:Mapped[String] = mapped_column(
+        String,
+        nullable=False
+    )
     currency:Mapped[String] = mapped_column(
         String,
         nullable=False
@@ -36,10 +40,6 @@ class StockTicker(Entity):
     )
     created:Mapped[TIMESTAMP] = mapped_column(
         TIMESTAMP(timezone=True),
-        nullable=False
-    )
-    type:Mapped[String] = mapped_column(
-        String,
         nullable=False
     )
 

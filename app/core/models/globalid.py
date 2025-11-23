@@ -24,12 +24,12 @@ class GlobalId(Entity):
         String,
         nullable=False
     )
-    created:Mapped[TIMESTAMP] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False
-    )
     class_name:Mapped[String] = mapped_column(
         String,
+        nullable=False
+    )
+    created:Mapped[TIMESTAMP] = mapped_column(
+        TIMESTAMP(timezone=True),
         nullable=False
     )
 

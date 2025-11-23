@@ -5,7 +5,6 @@ from sqlalchemy import BIGINT, String, JSON, TIMESTAMP, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ....core.db.session import get_session
-# from ....core.models.entity import Entity
 from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
 from .model_type import ModelType
@@ -20,7 +19,11 @@ class TrainingRun(FindableEntity):
     __tablename__ = "training_run"
     __name__ = f"{__name__}.TrainingRun"
 
-    id_model_type:Mapped[BIGINT] = mapped_column(
+    gid_model_type:Mapped[BIGINT] = mapped_column(
+        BIGINT,
+        nullable=False
+    )
+    gid_job_unit:Mapped[BIGINT] = mapped_column(
         BIGINT,
         nullable=False
     )
@@ -58,7 +61,7 @@ class TrainingRun(FindableEntity):
 
             gid = await GlobalId.allocate(T)
             T.gid = gid.gid
-            T.id_model_type = model.id
+            T.gid_model_type = model.id
             T.start = None
             T.end = None
             T.data = {}
@@ -92,7 +95,7 @@ class TrainingRun(FindableEntity):
     async def find_by_model(model:ModelType) -> list["TrainingRun"]:
         session = await get_session()
         try:
-            stmt = select(TrainingRun).where(TrainingRun.id_model_type==model.id)
+            stmt = select(TrainingRun).where(TrainingRun.gid_model_type==model.id)
             tups = await session.execute(statement=stmt)
             result = []
             for t in tups:

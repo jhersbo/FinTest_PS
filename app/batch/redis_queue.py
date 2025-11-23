@@ -35,13 +35,13 @@ class RedisQueue:
             return RQ
         return RedisQueue.QUEUE_CACHE.get(name)
 
-def end(job:rqJob, connection, result, *args, **kwargs) -> None:
+def end(job:rqJob, *args, **kwargs) -> None:
     # TODO - maybe we add job logs here
     unit = JobUnit._find_by_gid(job.meta["gid_job_unit"])
     if not unit.end_job():
         raise
 
-def fail(job:rqJob, connection, type, traceback) -> None:
+def fail(job:rqJob, *args, **kwargs) -> None:
     # TODO - maybe we add job logs here
     unit = JobUnit._find_by_gid(job.meta["gid_job_unit"])
     if not unit.fail_job():

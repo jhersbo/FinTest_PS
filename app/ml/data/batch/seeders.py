@@ -8,8 +8,9 @@ from ..clients.polygon_client import PolygonClient
 
 class SeedTickers(Job):
 
-    def run(self) -> None:
-        return asyncio.run(SeedTickers.seed(self.config))
+    def run(self, unit):
+        super().run(unit)
+        asyncio.run(SeedTickers.seed(self.config))
     
     @staticmethod
     async def seed(conf:dict={}) -> None:
@@ -57,4 +58,4 @@ class SeedTickers(Job):
 
                 await found.update()
         
-        created = await StockTicker.batch_create(to_create)
+        await StockTicker.batch_create(to_create)

@@ -125,8 +125,8 @@ async def post_seedTickers(type:str) -> JSONResponse:
     job = SeedTickers()
     job.configure(config)
 
-    Q = RedisQueue.get_queue("seeder")
-    rj = Q.put(job)
+    Q = RedisQueue.get_queue("long")
+    rj = await Q.put(job)
 
     return JSONResponse(
         {
