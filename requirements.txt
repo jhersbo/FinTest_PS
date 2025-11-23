@@ -19,6 +19,7 @@ pydantic-settings
 #DB
 sqlalchemy[asyncio]
 asyncpg
+psycopg2-binary
 
 #Utils
 python-dotenv

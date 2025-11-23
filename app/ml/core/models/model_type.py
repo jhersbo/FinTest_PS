@@ -1,19 +1,15 @@
 from sqlalchemy import BIGINT, String, JSON, BOOLEAN, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ....core.models.entity import Entity
+# from ....core.models.entity import Entity
+from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
 from ....core.db.session import get_session
 
-class ModelType(Entity):
+class ModelType(FindableEntity):
     __tablename__ = "model_type"
+    __name__ = f"{__name__}.ModelType"
 
-    id:Mapped[BIGINT] = mapped_column(
-        BIGINT,
-        primary_key=True,
-        unique=True,
-        nullable=False
-    )
     model_name:Mapped[String] = mapped_column(
         String,
         unique=True,
@@ -27,18 +23,33 @@ class ModelType(Entity):
         BOOLEAN,
         nullable=False
     )
+    trainer_name:Mapped[String] = mapped_column(
+        String,
+        nullable=False
+    )
 
     @staticmethod
-    async def create(model_name:str, config:dict={}, is_available:bool=True):
+    async def find_by_gid(gid:int) -> "ModelType":
         session = await get_session()
         try:
-            gid = await GlobalId.allocate(ModelType.__tablename__)
-            M = ModelType(
-                id=gid.id,
-                model_name=model_name,
-                config=config,
-                is_available=is_available
-            )
+            stmt = select(ModelType).where(ModelType.gid==gid)
+            return await session.scalar(statement=stmt)
+        finally:
+            await session.close()
+
+    @staticmethod
+    async def create(model_name:str, trainer_name:str, config:dict={}, is_available:bool=True):
+        session = await get_session()
+        try:
+            M = ModelType()
+
+            gid = await GlobalId.allocate(M)
+            M.gid = gid.gid
+            M.model_name=model_name
+            M.config=config
+            M.is_available = is_available
+            M.trainer_name = trainer_name
+
             async with session.begin():
                 session.add(M)
             return M
@@ -52,6 +63,7 @@ class ModelType(Entity):
                 session.add(self)
         finally:
             await session.close()
+
 
     @staticmethod
     async def find_by_name(name:str) -> "ModelType":

@@ -1,19 +1,34 @@
 import joblib
 from datetime import datetime
+import asyncio
 
 import pandas as pd
 import numpy as np
-
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
-from ..models.lstm import LSTMModel
+from app.batch.models.job_unit import JobUnit
+
+from ..model_defs.lstm import LSTMModel
 from ..data.models.stock_history import StockHistory
 from ...core.config.config import get_config
 from ...core.utils.logger import get_logger
+from ...batch.job import Job
 
 L = get_logger(__name__)
+
+class Trainer(Job):
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self, unit) -> None:
+        super().run(unit=unit)
+        asyncio.run(SimplePriceLSTM.train(unit=unit, **self.config))
+
+    def get_class_name(self):
+        return f"{__name__}.Trainer"
 
 class SimplePriceLSTM(Dataset):
 
@@ -45,7 +60,7 @@ class SimplePriceLSTM(Dataset):
         return data
     
     @staticmethod
-    async def train(ticker:str, num_epochs:int=20, lr:float=0.001) -> LSTMModel:
+    async def train(unit:JobUnit, ticker:str, epochs:int=20, lr:float=0.001) -> LSTMModel:
         data = await SimplePriceLSTM.load(ticker=ticker)
         data = [r.__dict__ for r in data]
         df = pd.DataFrame(data)
@@ -56,10 +71,10 @@ class SimplePriceLSTM(Dataset):
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-        for epoch in range(num_epochs):
-            L.info(f"Seq {epoch} of {num_epochs} epochs...")
+        total_loss = 0
+        for epoch in range(epochs):
+            L.info(f"Seq {epoch} of {epochs} epochs...")
             model.train()
-            total_loss = 0
             for x_batch, y_batch in data_loader:
                 optimizer.zero_grad()
                 y_pred = model(x_batch)
@@ -67,9 +82,9 @@ class SimplePriceLSTM(Dataset):
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
+                unit.accumulate("Total loss", loss.item())
         L.info(f"Finished training with {total_loss} loss")
-
+        unit.log(f"Finished training with {total_loss} loss")
         torch.save(model.state_dict(), f"{get_config().mdl_dir}/{SimplePriceLSTM.NAME}_{ticker}.pth")
-
+        
         return model
-

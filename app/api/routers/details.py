@@ -3,7 +3,7 @@ import json
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from ...services.data.clients.polygon_client import PolygonClient
+from ...ml.data.clients.polygon_client import PolygonClient
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
 

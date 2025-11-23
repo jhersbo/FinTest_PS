@@ -2,6 +2,7 @@ venv/
 .env
 dummy/
 artifacts/
+__postgresql_data__/
 
 # Python
 __pycache__/

@@ -4,24 +4,19 @@ from enum import Enum
 
 from starlette.requests import Request
 from sqlalchemy import String, BIGINT, Integer, TIMESTAMP, select
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, Session
 
 from ..db.session import get_session
-from ..models.entity import Entity
+from ..models.entity import FindableEntity
 from ..models.globalid import GlobalId
 class TokenStatus(Enum):
     ACTIVE = 1
     DEACTIVATED = 2
 
-class Token(Entity):
+class Token(FindableEntity):
     __tablename__ = "core_token"
+    __name__ = f"{__name__}.Token"
 
-    id:Mapped[BIGINT] = mapped_column(
-        BIGINT, 
-        primary_key=True,
-        unique=True,
-        nullable=False
-    )
     token:Mapped[String] = mapped_column(
         String, 
         unique=True,
@@ -69,15 +64,16 @@ class Token(Entity):
 
         session = await get_session()
         try:
-            gid = await GlobalId.allocate(Token.__tablename__)
-            T = Token(
-                id=gid.id,
-                token=token,
-                ip_address=ip,
-                status=TokenStatus.ACTIVE.value,
-                created=created,
-                expiration=expiration
-            )
+            T = Token()
+
+            gid = await GlobalId.allocate(T)
+            T.gid = gid.gid
+            T.token = token
+            T.ip_address = ip
+            T.status = TokenStatus.ACTIVE.value
+            T.created = created
+            T.expiration = expiration
+
             async with session.begin():
                 session.add(T)
             return T

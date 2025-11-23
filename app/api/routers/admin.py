@@ -9,11 +9,14 @@ from fastapi.responses import JSONResponse
 
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
-from ...services.data.models.stock_history import StockHistory
-from ...services.data.clients.av_client import AVClient
-from ...services.data.clients.polygon_client import PolygonClient
-from ...services.data.models.stock_tickers  import StockTicker
-from ...services.core.models.model_type import ModelType
+from ...ml.data.models.stock_history import StockHistory
+from ...ml.data.clients.av_client import AVClient
+from ...ml.data.clients.polygon_client import PolygonClient
+from ...ml.data.models.stock_tickers  import StockTicker
+from ...ml.core.models.model_type import ModelType
+from ...ml.training.simple_price_lstm import Trainer
+from ...ml.data.batch.seeders import SeedTickers
+from ...batch.redis_queue import RedisQueue
 
 # SETUP #
 router = APIRouter(
@@ -31,7 +34,7 @@ AV = AVClient()
 @router.post("/savedata/daily/{ticker}")
 @auth
 async def post_saveDataDaily(ticker:str) -> JSONResponse:
-    df = await AV.time_series_daily(symbol=ticker, full=True)
+    df = await AV.time_series_daily(symbol=ticker)
     exist = await StockHistory.find_by_ticker(ticker)
     to_create = []
     for row in df.itertuples():
@@ -44,7 +47,7 @@ async def post_saveDataDaily(ticker:str) -> JSONResponse:
             low=row.low,
             close=row.close,
             volume=row.volume
-        )
+        ) 
 
         found = False
         for sh in exist:
@@ -116,67 +119,36 @@ async def post_saveAllDataDaily() -> JSONResponse:
 @router.post("/seedtickers/{type}")
 @auth
 async def post_seedTickers(type:str) -> JSONResponse:
-    existing_tickers = await StockTicker.findAll()
+    config = {
+        "type": type
+    }
+    job = SeedTickers()
+    job.configure(config)
 
-    tickers = await P.getTickerInfo(type)
-    ts = datetime.datetime.now(datetime.timezone.utc)
-    to_create = []
-    update_count = 0
-    audit_count = 0
-    for obj in tickers:
-        T = StockTicker(
-            ticker=obj["ticker"],
-            name=obj["name"],
-            primary_exchange=obj["primary_exchange"],
-            currency=obj["currency_name"],
-            active=obj["active"],
-            last_audit=ts,
-            created=ts,
-            type=obj["type"]
-        )
+    Q = RedisQueue.get_queue("seeder")
+    rj = Q.put(job)
 
-        found = None
-        for i, ex in enumerate(existing_tickers):
-            if T.ticker == ex.ticker:
-                found = existing_tickers[i]
-                break
-        if found is None:
-            to_create.append(T)
-        else:
-            if not T.equals(found):
-                found.ticker = T.ticker
-                found.name = T.name
-                found.primary_exchange = T.primary_exchange
-                found.currency = T.currency
-                found.active = T.active
-
-                update_count += 1
-            found.last_audit = ts
-            audit_count += 1
-
-            await found.update() # TODO - convert to a batch update
-    
-    created = await StockTicker.batch_create(to_create)
     return JSONResponse(
         {
             "result": "Ok",
             "subject": {
-                "created": created,
-                "updated": update_count,
-                "audited": audit_count
+                "job_status":rj.get_status(),
+                "job_id":rj.get_id()
             }
         },
-        status_code=status.HTTP_201_CREATED
+        status_code=status.HTTP_202_ACCEPTED
     )
 
 @router.post("/seedmodels")
 @auth
 async def post_seedModels() -> JSONResponse:
+
     models:list[ModelType] = [
         ModelType(
             model_name="SimplePriceLSTM",
             config={},
-            is_available=True
+            is_available=True,
+            trainer_name=Trainer().get_class_name()
         )
     ]
 
@@ -186,12 +158,13 @@ async def post_seedModels() -> JSONResponse:
     for m in models:
         found = await ModelType.find_by_name(m.model_name)
         if not found:
-            await ModelType.create(m.model_name, m.config, m.is_available)
+            await ModelType.create(m.model_name, m.trainer_name, m.config, m.is_available)
             created += 1
         else:
             if not m.equals(found):
                 found.config = m.config
                 found.is_available = m.is_available
+                found.trainer_name = m.trainer_name
                 await found.update()
                 updated += 1
     
