@@ -1,6 +1,9 @@
 from sqlalchemy import BIGINT, String, JSON, BOOLEAN, select
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.db.entity_finder import EntityFinder
+from app.ml.training.trainable import Trainable
+
 # from ....core.models.entity import Entity
 from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
@@ -73,3 +76,7 @@ class ModelType(FindableEntity):
             return await session.scalar(statement=stmt)
         finally:
             await session.close()
+
+    def find_trainer(self) -> Trainable:
+        c = EntityFinder.resolve(self.trainer_name)
+        return c()

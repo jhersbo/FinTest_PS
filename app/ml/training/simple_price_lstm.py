@@ -9,6 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
 from app.batch.models.job_unit import JobUnit
+from app.ml.training.trainable import Trainable
 
 from ..model_defs.lstm import LSTMModel
 from ..data.models.stock_history import StockHistory
@@ -18,7 +19,7 @@ from ...batch.job import Job
 
 L = get_logger(__name__)
 
-class Trainer(Job):
+class Trainer(Trainable):
 
     def __init__(self):
         super().__init__()

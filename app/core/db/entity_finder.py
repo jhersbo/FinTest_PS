@@ -14,6 +14,10 @@ class EntityFinder:
 
     @staticmethod
     def resolve(path: str):
+        """
+        Utility method to find a module based on a string path
+        """
+
         parts = path.split('.')
         module_path = parts[0]
         try:

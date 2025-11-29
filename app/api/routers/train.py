@@ -6,9 +6,9 @@ from pydantic import BaseModel
 
 from app.core.utils.logger import get_logger
 from ..utils.security import auth
-from ..utils.responses import WrappedException
 from ...batch.redis_queue import RedisQueue
 from ...ml.training.simple_price_lstm import Trainer
+from ...ml.core.models.model_type import ModelType
 
 
 # SETUP #
@@ -23,23 +23,23 @@ L = get_logger(__name__)
 ####################
 
 class TickerTrainPayload(BaseModel):
-    model_name:str
     ticker:str
     epochs:int
 
 
-@router.post("/")
+@router.post("/{model_name}")
 @auth
-async def post_(payload:TickerTrainPayload) -> JSONResponse:
+async def post_(model_name:str, payload:TickerTrainPayload) -> JSONResponse:
     config = {
         "ticker": payload.ticker,
         "epochs": payload.epochs
     }
-    job_class = Trainer()
-    job_class.configure(config)
+    model = await ModelType.find_by_name(model_name)
+    trainer = model.find_trainer()
+    trainer.configure(config=config)
 
     Q = RedisQueue.get_queue("long")
-    job = await Q.put(job_class)
+    job = await Q.put(trainer)
 
     return JSONResponse(
         {

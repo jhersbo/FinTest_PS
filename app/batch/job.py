@@ -2,6 +2,18 @@ from app.batch.models.job_unit import JobUnit
 
 
 class Job:
+    """
+    This is the base class for all jobs consumed by the Redis queue.
+    To create a new job, one must create a class which inherits from this one:
+    ```python
+    class MyJob(Job):
+        def __init__(self):
+            super().__init__()
+        def run(self, unit:JobUnit):
+            self.run(unit)
+            ...
+    """
+
     config:dict[str, str] = {}
 
     def run(self, unit:JobUnit) -> None:
