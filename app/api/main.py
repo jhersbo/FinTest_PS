@@ -20,7 +20,7 @@ L = get_logger(__name__)
 
 app = FastAPI(
     title="FinTest Prediction Service",
-    version="v0.0.0.1"
+    version="v0.0.0.2"
 )
 
 # ROUTERS
