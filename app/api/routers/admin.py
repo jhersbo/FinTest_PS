@@ -116,11 +116,11 @@ async def post_saveAllDataDaily() -> JSONResponse:
         status_code=status.HTTP_201_CREATED
     )
 
-@router.post("/seedtickers/{type}")
+@router.post("/seedtickers/{market}")
 @auth
-async def post_seedTickers(type:str) -> JSONResponse:
+async def post_seedTickers(market:str) -> JSONResponse:
     config = {
-        "type": type
+        "market": market
     }
     job = SeedTickers()
     job.configure(config)

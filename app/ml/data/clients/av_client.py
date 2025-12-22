@@ -1,4 +1,3 @@
-from dotenv import get_key
 from requests import get
 from typing import Optional
 
@@ -37,7 +36,6 @@ class AVClient():
         }
         url = self.__build_url__(query)
         json = get(url=url).json()
-        L.info(json)
         df = pd.DataFrame.from_dict(json["Time Series (Daily)"], orient="index")
         df = df.sort_index(ascending=False).reset_index().rename(columns={"index": "date"})
         df.columns = df.columns.str.replace(pat=r"^\d+\.\s*", repl="", regex=True)

@@ -2,7 +2,9 @@ import datetime
 import asyncio
 
 from app.batch.job import Job
-from app.ml.data.models.stock_tickers import StockTicker
+from app.batch.models.job_unit import JobUnit
+from app.core.db.entity_finder import EntityFinder
+from app.ml.data.models.ticker import Ticker
 from ..clients.polygon_client import PolygonClient
 
 
@@ -10,37 +12,36 @@ class SeedTickers(Job):
 
     def run(self, unit):
         super().run(unit)
-        asyncio.run(SeedTickers.seed(self.config))
+        asyncio.run(SeedTickers.seed(unit, self.config))
     
     @staticmethod
-    async def seed(conf:dict={}) -> None:
+    async def seed(unit:JobUnit, conf:dict={}) -> None:
         P = PolygonClient()
-        type = conf.get("type")
-        if not type:
-            raise ValueError("Type must be provided")
-
-        existing_tickers = await StockTicker.findAll("CS")
-        tickers = await P.getTickerInfo(type)
+        market = conf.get("market")
+        if not market:
+            raise ValueError("Market must be provided")
+        existing_tickers = await Ticker.findAllByMarket(market)
+        tickers = await P.getTickerInfo(market)
         ts = datetime.datetime.now(datetime.timezone.utc)
         to_create = []
-        update_count = 0
-        audit_count = 0
+        to_update = []
         for obj in tickers:
-            T = StockTicker(
-                ticker=obj["ticker"],
-                name=obj["name"],
-                primary_exchange=obj["primary_exchange"],
-                currency=obj["currency_name"],
-                active=obj["active"],
+            T = Ticker(
+                ticker=obj.get("ticker"),
+                name=obj.get("name"),
+                primary_exchange=obj.get("primary_exchange"),
+                market=obj.get("market"),
+                type=obj.get("type"),
+                currency=obj.get("currency_name"),
+                active=obj.get("active"),
                 last_audit=ts,
-                created=ts,
-                type=type
+                created=ts
             )
 
             found = None
-            for i, ex in enumerate(existing_tickers):
-                if T.ticker == ex.ticker:
-                    found = existing_tickers[i]
+            for ticker in existing_tickers:
+                if T.ticker == ticker.ticker:
+                    found = ticker
                     break
             if found is None:
                 to_create.append(T)
@@ -49,13 +50,14 @@ class SeedTickers(Job):
                     found.ticker = T.ticker
                     found.name = T.name
                     found.primary_exchange = T.primary_exchange
+                    found.market = T.market
+                    found.type = T.type
                     found.currency = T.currency
                     found.active = T.active
-
-                    update_count += 1
                 found.last_audit = ts
-                audit_count += 1
-
-                await found.update()
+                to_update.append(found)
         
-        await StockTicker.batch_create(to_create)
+        await EntityFinder.batch_create(to_create)
+        await EntityFinder.batch_update(to_update)
+
+        unit.log("Job completed successfully")

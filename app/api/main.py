@@ -70,6 +70,15 @@ def root():
 @app.get("/test")
 async def test():
 
+    from ..ml.data.clients.av_client import AVClient
+    from ..ml.data.clients.polygon_client import PolygonClient
+
+    # A = AVClient()
+    # df = await A.time_series_daily("AAPL")
+
+    P = PolygonClient()
+    df = await P.getDetails("AAPL")
+
     return JSONResponse(
         {
             "result": "Ok",
