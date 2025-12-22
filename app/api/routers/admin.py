@@ -8,11 +8,11 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 
 from app.core.utils.logger import get_logger
+from app.ml.data.models.ticker import Ticker
 from ..utils.security import auth
 from ...ml.data.models.stock_history import StockHistory
 from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
-from ...ml.data.models.stock_tickers  import StockTicker
 from ...ml.core.models.model_type import ModelType
 from ...ml.training.simple_price_lstm import Trainer
 from ...ml.data.batch.seeders import SeedTickers
@@ -70,48 +70,12 @@ async def post_saveDataDaily(ticker:str) -> JSONResponse:
 @auth
 async def post_saveAllDataDaily() -> JSONResponse:
 
-    tickers = await StockTicker.findAll("CS")
-    created = 0
-    t = 0
-    for ticker in tickers:
-        # TODO: remove
-        L.info(f"{t} of {len(tickers)}")
-        t += 1
-        ##
-        df = None
-        try:
-            df = await AV.time_series_daily(symbol=ticker, full=True)
-        except Exception as e:
-            continue
-        exist = await StockHistory.find_by_ticker(ticker)
-        to_create = []
-        for row in df.itertuples():
-            s = StockHistory(
-                decode=f"{row.date}|{ticker}",
-                date=datetime.date.fromisoformat(row.date),
-                ticker=ticker,
-                _open=row.open,
-                high=row.high,
-                low=row.low,
-                close=row.close,
-                volume=row.volume
-            )
-
-            found = False
-            for sh in exist:
-                if sh.decode == s.decode:
-                    found = True
-
-            if not found:
-                to_create.append(s)
-        
-        created = await StockHistory.batch_create(to_create)
 
 
     return JSONResponse(
         {
             "result": "Ok",
-            "subject": f"{created} records created"
+            "subject": ""
         },
         status_code=status.HTTP_201_CREATED
     )
