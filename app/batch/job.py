@@ -20,7 +20,7 @@ class Job:
         unit.start_job()
 
     def configure(self, config:dict) -> None:
-        self.config = config
+        self.config = {k: v for k, v in config.items() if v is not None}
 
     def get_class_name(self) -> str:
         raise NotImplementedError("Child must implement this method")

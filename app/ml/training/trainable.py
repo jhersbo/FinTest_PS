@@ -10,7 +10,4 @@ class Trainable(Job):
         super().__init__()
     
     def run(self, unit):
-        return super().run(unit)
-    
-    # def configure(self, config):
-    #     return super().configure(config)
+        super().run(unit)

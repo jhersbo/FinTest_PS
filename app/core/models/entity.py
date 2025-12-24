@@ -16,18 +16,33 @@ class Entity(DeclarativeBase):
         return s
     
     def equals(self, obj:"Entity") -> bool:
-        if type(self) != type(obj):
+        # TODO - this does not work
+        if not obj:
             return False
         for key in self.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
+            if key.startswith("_"):
+                pass
+            s_val = None
+            o_val = None
+            try:
+                s_val = getattr(self, key)
+                o_val = getattr(obj, key)
+            except:
+                return False
 
             if not s_val or not o_val or s_val != o_val:
                 return False
             
         for key in obj.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
+            if key.startswith("_"):
+                pass
+            s_val = None
+            o_val = None
+            try:
+                s_val = getattr(self, key)
+                o_val = getattr(obj, key)
+            except:
+                return False
 
             if not s_val or not o_val or s_val != o_val:
                 return False
@@ -38,7 +53,7 @@ class Entity(DeclarativeBase):
 
 class FindableEntity(DeclarativeBase):
     """
-    The child class for all DB tables which implement a global ID
+    The parent class for all DB tables which implement a global ID
     """
     gid:Mapped[BIGINT] = mapped_column(
         BIGINT,

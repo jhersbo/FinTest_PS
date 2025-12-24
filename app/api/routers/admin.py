@@ -6,6 +6,7 @@ import datetime
 
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from app.core.utils.logger import get_logger
 from app.ml.data.models.ticker import Ticker
@@ -15,7 +16,7 @@ from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.core.models.model_type import ModelType
 from ...ml.training.simple_price_lstm import Trainer
-from ...ml.data.batch.seeders import SeedTickers
+from ...ml.data.batch.seeders import SeedTickers, SeedSMA
 from ...batch.redis_queue import RedisQueue
 
 # SETUP #
@@ -102,6 +103,42 @@ async def post_seedTickers(market:str) -> JSONResponse:
         },
         status_code=status.HTTP_202_ACCEPTED
     )
+
+class SeedSMAPayload(BaseModel):
+    ticker:str=None
+    timespan:str=None
+    window:int=None
+    series_type:str=None
+    limit:int=None
+
+@router.post("/seedsma")
+@auth
+async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
+    config = {
+        "ticker": payload.ticker,
+        "timespan": payload.timespan,
+        "window": payload.window,
+        "series_type": payload.series_type,
+        "limit": payload.limit
+    }
+
+    _job = SeedSMA()
+    _job.configure(config)
+
+    Q = RedisQueue.get_queue("long")
+    job = await Q.put(_job)
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "job_id": f"{job.id}",
+                "job_status": f"{job.get_status()}"
+            }
+        },
+        status_code=status.HTTP_202_ACCEPTED
+    )
+
 
 @router.post("/seedmodels")
 @auth

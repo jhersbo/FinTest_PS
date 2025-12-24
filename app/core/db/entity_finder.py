@@ -1,5 +1,7 @@
 import importlib
 
+from sqlalchemy.orm import DeclarativeBase
+
 from app.core.db.session import get_session
 
 from ..models.entity import FindableEntity
@@ -39,16 +41,17 @@ class EntityFinder:
         return obj
 
     @staticmethod
-    async def batch_create(objects:list["FindableEntity"]) -> int:
+    async def batch_create(objects:list[DeclarativeBase]) -> int:
         created = 0
         session = await get_session()
         try:
             async with session.begin():
                 payload = []
                 for i, obj in enumerate(objects):
+                    if isinstance(obj, FindableEntity):
+                        gid = await GlobalId.allocate(obj)
+                        obj.gid = gid.gid
                     created += 1
-                    gid = await GlobalId.allocate(obj)
-                    obj.gid = gid.gid
                     payload.append(obj)
                     if(i % BATCH_CHUNK_SIZE == 0 or i == len(objects) - 1):
                         session.add_all(payload)
@@ -61,7 +64,7 @@ class EntityFinder:
             await session.close()
 
     @staticmethod
-    async def batch_update(objects:list["FindableEntity"]) -> None:
+    async def batch_update(objects:list[DeclarativeBase]) -> None:
         session = await get_session()
         try:
             async with session.begin():

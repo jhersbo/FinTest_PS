@@ -76,13 +76,13 @@ class PolygonClient():
         return df
         
     @ratelimit()
-    async def getSMA(self, ticker:str, window:int=50, limit:int=5000) -> Optional[pd.DataFrame]:
+    async def getSMA(self, ticker:str, timespan:str="day", window:int=50, series_type:str="close", limit:int=5000) -> Optional[pd.DataFrame]:
         resp = self.REST.get_sma(
             ticker=ticker,
-            timespan="day",
+            timespan=timespan,
             adjusted="true",
             window=window,
-            series_type="close",
+            series_type=series_type,
             order="desc",
             limit=limit,
         )

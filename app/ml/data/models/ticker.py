@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, TIMESTAMP, BOOLEAN, select, update
 
+from app.core.db.entity_finder import EntityFinder
+
 from ....core.models.globalid import GlobalId
 from ....core.db.session import batch_create, get_session
 from ....core.models.entity import FindableEntity
@@ -116,7 +118,7 @@ class Ticker(FindableEntity):
 
     @staticmethod
     async def batch_create(tickers:list["Ticker"]) -> int:
-        return await batch_create(tickers)
+        return await EntityFinder.batch_create(tickers)
     
     async def update(self) -> None:
         session = await get_session()
