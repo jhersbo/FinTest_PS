@@ -103,21 +103,21 @@ class SeedSMA(Job):
             for row in sma.itertuples(index=False):
                 _new = SMA(
                     gid_ticker=ticker.gid,
-                    value=row.value,
+                    value=round(row.value, 4),
                     series_type=_series_type,
                     timespan=_timespan,
                     window=_window,
                     timestamp=datetime.datetime.fromtimestamp(row.timestamp / 1000, tz=datetime.timezone.utc),
                     date=datetime.datetime.fromtimestamp(row.timestamp / 1000, tz=datetime.timezone.utc).date()
                 )
-                # TODO - need to figure out a way to better compare them
-                if _new.equals(_existing):
+                exists = False
+                for sma in _existing:
+                    if _new.equals(sma):
+                        exists = True
+                        break
+                if exists:
                     continue
                 to_create.append(_new)
-
-        print(len(to_create))
-
-        # created = await EntityFinder.batch_create(to_create)
-        # unit.accumulate("SMA created", created)
-
+        created = await EntityFinder.batch_create(to_create)
+        unit.accumulate("SMA created", created)
         unit.log("Job completed successfully")

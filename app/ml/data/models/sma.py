@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from datetime import date as _date
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, TIMESTAMP, DATE, DOUBLE_PRECISION, INTEGER, BIGINT, select
@@ -79,5 +80,19 @@ class SMA(Entity):
             for t in tups:
                 result.append(t[0])
             return result
+        finally:
+            await session.close()
+
+    @staticmethod
+    async def find_by_ticker_window_date(ticker:Ticker, window:int, date:_date) -> list["SMA"]:
+        session = await get_session()
+        try:
+            stmt = select(SMA).where(
+                SMA.gid_ticker==ticker.gid,
+                SMA.window==window,
+                SMA.date==date
+            )
+            tups = await session.execute(statement=stmt)
+            return [t for t in tups]
         finally:
             await session.close()

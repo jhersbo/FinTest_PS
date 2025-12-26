@@ -1,6 +1,13 @@
+from typing import Any
+
 from sqlalchemy import BIGINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 import pandas as pd
+
+def __to_dict__(obj:object) -> dict[str, Any]:
+    return {
+        k: v for k,v in vars(obj).items() if not k.startswith(("_","<","s_id"))
+    }
 
 class Entity(DeclarativeBase):
     """
@@ -16,39 +23,13 @@ class Entity(DeclarativeBase):
         return s
     
     def equals(self, obj:"Entity") -> bool:
-        # TODO - this does not work
         if not obj:
             return False
-        for key in self.__dict__.keys():
-            if key.startswith("_"):
-                pass
-            s_val = None
-            o_val = None
-            try:
-                s_val = getattr(self, key)
-                o_val = getattr(obj, key)
-            except:
-                return False
+        return self.to_dict() == obj.to_dict()
 
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        for key in obj.__dict__.keys():
-            if key.startswith("_"):
-                pass
-            s_val = None
-            o_val = None
-            try:
-                s_val = getattr(self, key)
-                o_val = getattr(obj, key)
-            except:
-                return False
+    def to_dict(self) -> dict[str, Any]:
+        return __to_dict__(self)
 
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        return True
-    
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
 class FindableEntity(DeclarativeBase):
@@ -74,22 +55,11 @@ class FindableEntity(DeclarativeBase):
         return s
     
     def equals(self, obj:"FindableEntity") -> bool:
-        if type(self) != type(obj):
+        if not obj:
             return False
-        for key in self.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
+        return self.to_dict() == obj.to_dict()
 
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        for key in obj.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
-
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        return True
+    def to_dict(self) -> dict[str, Any]:
+        return __to_dict__(self)
     
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
