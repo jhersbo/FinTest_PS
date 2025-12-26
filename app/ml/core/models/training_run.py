@@ -97,9 +97,6 @@ class TrainingRun(FindableEntity):
         try:
             stmt = select(TrainingRun).where(TrainingRun.gid_model_type==model.id)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()

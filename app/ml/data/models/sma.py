@@ -76,10 +76,7 @@ class SMA(Entity):
         try:
             stmt = select(SMA).where(SMA.gid_ticker==ticker.gid)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 
@@ -93,6 +90,6 @@ class SMA(Entity):
                 SMA.date==date
             )
             tups = await session.execute(statement=stmt)
-            return [t for t in tups]
+            return [t[0] for t in tups]
         finally:
             await session.close()

@@ -70,10 +70,7 @@ class Ticker(FindableEntity):
         try:
             stmt = select(Ticker)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 
@@ -83,10 +80,7 @@ class Ticker(FindableEntity):
         try:
             stmt = select(Ticker).where(Ticker.market == market)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 

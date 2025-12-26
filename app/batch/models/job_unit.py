@@ -52,10 +52,7 @@ class _JobStats(Entity):
         try:
             stmt = select(_JobStats).where(_JobStats.gid_job_unit==gid_job_unit)
             tups = session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             session.close()
 
@@ -117,10 +114,7 @@ class _JobLog(Entity):
         try:
             stmt = select(_JobLog).where(_JobLog.gid_job_unit==gid_job_unit)
             tups = session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             session.close()
 
