@@ -9,13 +9,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.core.utils.logger import get_logger
-from app.ml.data.models.ticker import Ticker
+from app.ml.training.ts_lstm import Trainer as TSLSTM_Trainer
 from ..utils.security import auth
 from ...ml.data.models.stock_history import StockHistory
 from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.core.models.model_type import ModelType
-from ...ml.training.simple_price_lstm import Trainer
+from ...ml.training.simple_price_lstm import Trainer as SPLSTM_Trainer
 from ...ml.data.batch.seeders import SeedTickers, SeedSMA
 from ...batch.redis_queue import RedisQueue
 
@@ -149,7 +149,13 @@ async def post_seedModels() -> JSONResponse:
             model_name="SimplePriceLSTM",
             config={},
             is_available=True,
-            trainer_name=Trainer().get_class_name()
+            trainer_name=SPLSTM_Trainer().get_class_name()
+        ),
+        ModelType(
+            model_name="TimeSeriesLSTM",
+            config={},
+            is_available=True,
+            trainer_name=TSLSTM_Trainer().get_class_name()
         )
     ]
 

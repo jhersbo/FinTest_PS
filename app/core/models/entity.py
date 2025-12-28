@@ -9,6 +9,31 @@ def __to_dict__(obj:object) -> dict[str, Any]:
         k: v for k,v in vars(obj).items() if not k.startswith(("_","<","s_id"))
     }
 
+class View(DeclarativeBase):
+    """
+    The parent class for all DB views.
+    """
+
+    __is_view__ = True
+
+    def __repr__(self):
+        s = f"table_name: {self.__tablename__}\n"
+        for key in self.__dict__.keys():
+            val = getattr(self, key)
+            if val is not None and not str(val).startswith("<"):
+                s += f"{key}: {val}\n"
+        return s
+    
+    def equals(self, obj:"View") -> bool:
+        if not obj:
+            return False
+        return self.to_dict() == obj.to_dict()
+
+    def to_dict(self) -> dict[str, Any]:
+        return __to_dict__(self)
+
+    def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
+
 class Entity(DeclarativeBase):
     """
     The parent class for all DB tables.
