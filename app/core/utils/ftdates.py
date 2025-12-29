@@ -14,6 +14,31 @@ def today_minus_days(daysBefore: int) -> date:
     """
     return today() - timedelta(days=daysBefore)
 
+def str_to_date(date_str:str) -> date:
+    """
+    Converts a yyyy-MM-dd date string into a date object
+    """
+    parts = [int(pt) for pt in str(date_str).split("-")]
+    return date(year=parts[0], month=parts[1], day=parts[2])
+
+def prev_weekday(date:date) -> date:
+    """
+    Returns the prior weekday date
+    """
+    d = date - timedelta(days=1)
+    if d.weekday() > 4:
+        return prev_weekday(d)
+    return d
+
+def next_weekday(date:date) -> date:
+    """
+    Returns the next weekday date
+    """
+    d = date + timedelta(days=1)
+    if d.weekday() > 4:
+        return next_weekday(d)
+    return d
+
 def is_market_open(market:str="US") -> bool:
     """
     Checks to see if the selected market is open
