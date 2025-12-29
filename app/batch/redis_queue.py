@@ -13,7 +13,7 @@ class RedisQueue:
         "long": None,
         "short": None
     }
-    DEFAULT_TIMEOUT = 1000
+    DEFAULT_TIMEOUT = 100000
 
     def __init__(self, queue: Queue):
         self.Q:Queue = queue
