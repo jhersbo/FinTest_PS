@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from datetime import date as _date
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, TIMESTAMP, DATE, DOUBLE_PRECISION, INTEGER, BIGINT, select, ForeignKey
+from sqlalchemy import String, TIMESTAMP, DATE, DOUBLE_PRECISION, INTEGER, BIGINT, select
 
 from app.core.db.session import get_session
 from app.core.models.entity import Entity
