@@ -16,7 +16,7 @@ from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.core.models.model_type import ModelType
 from ...ml.training.simple_price_lstm import Trainer as SPLSTM_Trainer
-from ...ml.data.batch.seeders import SeedTickers, SeedSMA
+from ...ml.data.batch.seeders import SeedDailyAgg, SeedTickers, SeedSMA
 from ...batch.redis_queue import RedisQueue
 
 # SETUP #
@@ -81,7 +81,7 @@ async def post_saveAllDataDaily() -> JSONResponse:
         status_code=status.HTTP_201_CREATED
     )
 
-@router.post("/seedtickers/{market}")
+@router.post("/seed/tickers/{market}")
 @auth
 async def post_seedTickers(market:str) -> JSONResponse:
     config = {
@@ -104,6 +104,48 @@ async def post_seedTickers(market:str) -> JSONResponse:
         status_code=status.HTTP_202_ACCEPTED
     )
 
+class SeedDailyAggPayload(BaseModel):
+    """
+    ticker - if seeding a single ticker, define ticker\n
+    market - if seeing all tickers for a market type, define market\n
+    start - date to start counting backwards from\n
+    end - date to conclude\n
+    retries - how many retries the job is allowed
+    """
+    ticker:str=None
+    market:str=None
+    start:str=None
+    end:str=None
+    retries:int=None
+
+@router.post("/seed/daily_agg")
+@auth
+async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
+    config = {
+        "ticker": payload.ticker,
+        "market": payload.market,
+        "start": payload.start,
+        "end": payload.end,
+        "retries": payload.retries
+    }
+    _job = SeedDailyAgg()
+    _job.configure(config)
+
+    Q = RedisQueue.get_queue("long")
+    job = await Q.put(_job)
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "job_id": f"{job.id}",
+                "job_status": f"{job.get_status()}"
+            }
+        },
+        status_code=status.HTTP_202_ACCEPTED
+    )
+
+
 class SeedSMAPayload(BaseModel):
     ticker:str=None
     timespan:str=None
@@ -111,7 +153,7 @@ class SeedSMAPayload(BaseModel):
     series_type:str=None
     limit:int=None
 
-@router.post("/seedsma")
+@router.post("/seed/sma")
 @auth
 async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
     config = {
@@ -140,7 +182,7 @@ async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
     )
 
 
-@router.post("/seedmodels")
+@router.post("/seed/models")
 @auth
 async def post_seedModels() -> JSONResponse:
 

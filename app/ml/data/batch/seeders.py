@@ -1,10 +1,12 @@
-import datetime
+from datetime import datetime, date as _date, timedelta, timezone
 import asyncio
 
 from app.batch.job import Job
 from app.batch.models.job_unit import JobUnit
 from app.core.db.entity_finder import EntityFinder
+from app.core.utils import ftdates
 from app.core.utils.logger import get_logger
+from app.ml.data.models.daily_agg import DailyAgg
 from app.ml.data.models.ticker import Ticker
 from app.ml.data.models.sma import SMA
 from ..clients.polygon_client import PolygonClient
@@ -25,7 +27,7 @@ class SeedTickers(Job):
             raise ValueError("Market must be provided")
         existing_tickers = await Ticker.findAllByMarket(market)
         tickers = await P.getTickerInfo(market)
-        ts = datetime.datetime.now(datetime.timezone.utc)
+        ts = datetime.now(timezone.utc)
         to_create = []
         to_update = []
         for obj in tickers:
@@ -107,8 +109,8 @@ class SeedSMA(Job):
                     series_type=_series_type,
                     timespan=_timespan,
                     window=_window,
-                    timestamp=datetime.datetime.fromtimestamp(row.timestamp / 1000, tz=datetime.timezone.utc),
-                    date=datetime.datetime.fromtimestamp(row.timestamp / 1000, tz=datetime.timezone.utc).date()
+                    timestamp=datetime.fromtimestamp(row.timestamp / 1000, tz=timezone.utc),
+                    date=datetime.fromtimestamp(row.timestamp / 1000, tz=timezone.utc).date()
                 )
                 exists = False
                 for sma in _existing:
@@ -121,3 +123,67 @@ class SeedSMA(Job):
         created = await EntityFinder.batch_create(to_create)
         unit.accumulate("SMA created", created)
         unit.log("Job completed successfully")
+
+class SeedDailyAgg(Job):
+
+    def run(self, unit):
+        super().run(unit)
+        asyncio.run(SeedDailyAgg.seed(unit, self.config))
+
+    @staticmethod
+    async def seed(unit:JobUnit, conf:dict={}) -> None:
+        market = conf.get("market")
+        ticker = conf.get("ticker")
+        max_retries = conf.get("retries", 3)
+        end_str = conf.get("end", "1900-01-01")
+        start_str = conf.get("start")
+        end = ftdates.str_to_date(end_str)
+        start = _date.today()
+        if start_str:
+            start = ftdates.str_to_date(start_str)
+        tickers = []
+        if (not market and not ticker) or (market and ticker):
+            raise Exception("Bad config - params 'ticker' and 'market' are mutually exclusive")
+        if not market:
+            tickers = [await Ticker.findByTicker(ticker)]
+        if not ticker:
+            tickers = await Ticker.findAllByMarket(market)
+        P = PolygonClient()
+        to_create = []
+        for ticker in tickers:
+            date = ftdates.prev_weekday(start)
+            retries = max_retries
+            aggs = await DailyAgg.find_by_ticker(ticker)
+            while retries > 0 and date > end:
+                try:
+                    existing = False
+                    for _agg in aggs:
+                        if _agg.date == date:
+                            existing = True
+                            retries = max_retries
+                            break
+                    if not existing:
+                        agg = await P.getDailyAgg(ticker, date=date)
+                        if not agg:
+                            retries -= 1
+                        else:
+                            D = DailyAgg(
+                                gid_ticker=ticker.gid,
+                                opn=agg["open"],
+                                cls=agg["close"],
+                                high=agg["high"],
+                                low=agg["low"],
+                                vol=agg["volume"],
+                                date=_date.fromisoformat(agg["date"]),
+                                timestamp=datetime.fromtimestamp((datetime.fromordinal(date.toordinal()).timestamp()), tz=timezone.utc)
+                            )
+                            to_create.append(D)
+                            retries = max_retries
+                except Exception:
+                    L.exception(f"Exception thrown while seeding {ticker.ticker} | {date}")
+                    retries -= 1
+                date = ftdates.prev_weekday(date)
+        created = await EntityFinder.batch_create(to_create)
+
+        unit.accumulate("Daily Agg created", created)
+        unit.log("Job completed")
