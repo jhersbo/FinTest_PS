@@ -34,12 +34,20 @@ class RedisQueue:
     @staticmethod
     def get_queue(name) -> "RedisQueue":
         if not RedisQueue.QUEUE_CACHE.get(name):
-            conn = Redis(RedisQueue.REDIS_SERVICE, RedisQueue.REDIS_PORT, db=0)
+            conn = RedisQueue.__connection__()
             Q = Queue(connection=conn, name=name)
             RQ = RedisQueue(Q)
             RedisQueue.QUEUE_CACHE[Q.name] = RQ
             return RQ
         return RedisQueue.QUEUE_CACHE.get(name)
+    
+    @staticmethod
+    def find_job(rq_token:str) -> rqJob:
+        return rqJob.fetch(rq_token, connection=RedisQueue.__connection__())
+
+    @staticmethod
+    def __connection__() -> Redis:
+        return Redis(RedisQueue.REDIS_SERVICE, RedisQueue.REDIS_PORT, db=0)
 
 def end(job:rqJob, *args, **kwargs) -> None:
     # TODO - maybe we add job logs here

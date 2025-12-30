@@ -151,7 +151,7 @@ class SeedDailyAgg(Job):
         P = PolygonClient()
         to_create = []
         for ticker in tickers:
-            date = ftdates.prev_weekday(start)
+            date = ftdates.prev_weekday(start, ticker.primary_exchange)
             retries = max_retries
             aggs = await DailyAgg.find_by_ticker(ticker)
             while retries > 0 and date > end:
@@ -182,7 +182,7 @@ class SeedDailyAgg(Job):
                 except Exception:
                     L.exception(f"Exception thrown while seeding {ticker.ticker} | {date}")
                     retries -= 1
-                date = ftdates.prev_weekday(date)
+                date = ftdates.prev_weekday(date, ticker.primary_exchange)
         created = await EntityFinder.batch_create(to_create)
 
         unit.accumulate("Daily Agg created", created)

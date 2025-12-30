@@ -20,7 +20,7 @@ class PolygonClient():
     """
 
     URL_BASE = "https://api.polygon.io"
-    RL = 10
+    RL = 12
 
     def __init__(self) -> None:
         CONFIG = get_config()
@@ -99,14 +99,12 @@ class PolygonClient():
     
     @ratelimit(rl_limit=RL)
     async def getDailyAgg(self, ticker:Ticker, date:str|date, adjusted:bool=True) -> dict[str, Any]:
-        L.info(f"{ticker.ticker} | {str(date)}")
         try:
             resp = self.REST.get_daily_open_close_agg(
             ticker=ticker.ticker,
             date=date,
             adjusted=adjusted
             )
-            L.info(resp)
             status = resp.__dict__.get("status")
             if not status or status != "OK":
                 return None
