@@ -3,6 +3,7 @@ from rq import Queue
 from rq.job import Job as rqJob
 
 from app.batch.models.job_unit import JobUnit
+from app.core.config.config import get_config
 from app.core.utils.logger import get_logger
 
 from .job import Job
@@ -10,7 +11,7 @@ from .job import Job
 L = get_logger(__name__)
 
 class RedisQueue:
-    REDIS_PORT = 6379
+    REDIS_PORT = get_config().redis_port
     REDIS_SERVICE = "redis"
     QUEUE_CACHE = {
         "long": None,
@@ -31,7 +32,7 @@ class RedisQueue:
         return _job
 
     @staticmethod
-    def get_queue(name:str="default") -> "RedisQueue":
+    def get_queue(name) -> "RedisQueue":
         if not RedisQueue.QUEUE_CACHE.get(name):
             conn = Redis(RedisQueue.REDIS_SERVICE, RedisQueue.REDIS_PORT, db=0)
             Q = Queue(connection=conn, name=name)
