@@ -7,6 +7,7 @@ import datetime
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from rq.exceptions import NoSuchJobError
 
 from app.core.utils.logger import get_logger
 from app.ml.training.ts_lstm import Trainer as TSLSTM_Trainer
@@ -32,6 +33,40 @@ AV = AVClient()
 ####################
 #      ROUTES      #
 ####################
+
+@router.get("/job/{rq_token}")
+@auth
+async def get_job(rq_token:str) -> JSONResponse:
+    job = None
+    try:
+        job = RedisQueue.find_job(rq_token)
+        return JSONResponse(
+            {
+                "result": "Ok",
+                "subject":{
+                    "job": {
+                        "id": job.id,
+                        "status": job.get_status(),
+                        "meta": job.get_meta()
+                    }
+                }
+            },
+            status_code=status.HTTP_200_OK
+        )
+    except NoSuchJobError:
+        L.exception("No such job")
+        pass
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject":{
+                "job": None
+            }
+        },
+        status_code=status.HTTP_200_OK
+    )
+
 @router.post("/savedata/daily/{ticker}")
 @auth
 async def post_saveDataDaily(ticker:str) -> JSONResponse:
