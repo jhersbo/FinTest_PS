@@ -1,10 +1,13 @@
 from redis import Redis
-from rq import Queue, Callback
+from rq import Queue
 from rq.job import Job as rqJob
 
 from app.batch.models.job_unit import JobUnit
+from app.core.utils.logger import get_logger
 
 from .job import Job
+
+L = get_logger(__name__)
 
 class RedisQueue:
     REDIS_PORT = 6379
@@ -23,6 +26,8 @@ class RedisQueue:
         _job = self.Q.enqueue(job.run, args=(unit,), job_timeout=RedisQueue.DEFAULT_TIMEOUT, on_success=end, on_failure=fail)
         _job.meta["gid_job_unit"] = unit.gid
         _job.save()
+        unit.rq_token = _job.id
+        await unit.update()
         return _job
 
     @staticmethod

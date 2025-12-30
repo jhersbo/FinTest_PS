@@ -135,6 +135,9 @@ class JobUnit(FindableEntity):
     __tablename__ = "job_unit"
     __name__ = f"{__name__}.JobUnit"
 
+    rq_token:Mapped[String] = mapped_column(
+        String
+    )
     failed:Mapped[BOOLEAN] = mapped_column(
         BOOLEAN,
         nullable=False
@@ -249,6 +252,7 @@ class JobUnit(FindableEntity):
 
             gid = await GlobalId.allocate(J)
             J.gid = gid.gid
+            J.rq_token = None
             J.failed = False
             J.ack = None
             J.created = now
@@ -258,6 +262,18 @@ class JobUnit(FindableEntity):
             async with session.begin():
                 session.add(J)
             return J
+        except:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+    async def update(self) -> bool:
+        session = await get_session()
+        try:
+            async with session.begin():
+                session.add(self)
+            return True
         except:
             await session.rollback()
             raise
