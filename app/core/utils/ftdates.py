@@ -2,6 +2,10 @@ from datetime import date, timedelta, datetime
 import pytz
 import holidays
 
+from app.core.utils.logger import get_logger
+
+L = get_logger(__name__)
+
 def today() -> date:
     """
     Returns today's date (e.g. yyyy-MM-dd)
@@ -21,23 +25,54 @@ def str_to_date(date_str:str) -> date:
     parts = [int(pt) for pt in str(date_str).split("-")]
     return date(year=parts[0], month=parts[1], day=parts[2])
 
-def prev_weekday(date:date) -> date:
+def prev_weekday(date:date, exchange:str="XNYS") -> date:
     """
-    Returns the prior weekday date
+    Returns the prior non-holiday weekday date
     """
     d = date - timedelta(days=1)
-    if d.weekday() > 4:
+    if d.weekday() > 4 or is_holiday(d, exchange):
         return prev_weekday(d)
     return d
 
-def next_weekday(date:date) -> date:
+def next_weekday(date:date, exchange:str="XNYS") -> date:
     """
-    Returns the next weekday date
+    Returns the next non-holiday weekday date
     """
     d = date + timedelta(days=1)
-    if d.weekday() > 4:
+    if d.weekday() > 4 or is_holiday(d, exchange):
         return next_weekday(d)
     return d
+
+def is_holiday(d:date, exchange:str) -> bool:
+    us_ex_tup = (
+        "XASE",
+        "XBOS",
+        "XCIS",
+        "FINR",
+        "24EQ",
+        "MRPL",
+        "XISE",
+        "EDGA",
+        "EDGX",
+        "LTSE",
+        "XCHI",
+        "XNYS",
+        "ARCX",
+        "XNAS",
+        "MEMX",
+        "IEXG",
+        "CBSX",
+        "XPSX",
+        "BATY",
+        "BATS"
+    )
+    ex = "XNYS" if exchange in us_ex_tup else exchange
+    try:
+        h = holidays.financial_holidays(market=ex)
+        return d in h
+    except:
+        L.exception(f"Exception thrown while interpreting holiday: {str(d)} | {exchange}")
+    return False
 
 def is_market_open(market:str="US") -> bool:
     """
