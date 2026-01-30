@@ -48,7 +48,7 @@ class TimeSeriesLSTM(Dataset):
 
     def __getitem__(self, index) -> tuple[torch.Tensor, torch.Tensor]:
         x = self.data[index:index + self.seq_len]
-        y = self.data[index + self.seq_len][0] 
+        y = self.data[index + self.seq_len][:]
         return x, y
 
     @staticmethod
@@ -64,27 +64,27 @@ class TimeSeriesLSTM(Dataset):
         f_cols = config.get("f_cols")
         epochs = config.get("epochs")
 
-        data_set = TimeSeriesLSTM(df, ticker=config["ticker"], feature_cols=f_cols)
-        data_loader = DataLoader(data_set, batch_size=32, shuffle=True)
+        data_set = TimeSeriesLSTM(df, ticker=ticker, feature_cols=f_cols)
+        data_loader = DataLoader(data_set, batch_size=32)
 
-        model = LSTMModel(input_size=len(data_set.f_cols), num_layers=5)
+        model = LSTMModel(input_size=len(data_set.f_cols), output_size=len(data_set.f_cols))
         criterion = torch.nn.MSELoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001) #TODO
-
-        total_loss = 0
+        optimizer = torch.optim.Adam(model.parameters())
+        
         for epoch in range(epochs):
             L.info(f"Seq {epoch} of {epochs} epochs...")
+            epoch_loss = 0
             model.train()
             for x_batch, y_batch in data_loader:
                 optimizer.zero_grad()
                 y_pred = model(x_batch)
-                loss = criterion(y_pred.squeeze(), y_batch)
+                loss:torch.Tensor = criterion(y_pred, y_batch)
                 loss.backward()
                 optimizer.step()
-                total_loss += loss.item()
-                unit.accumulate("Total loss", loss.item())
-        L.info(f"Finished training with {total_loss} loss")
-        unit.log(f"Finished training with {total_loss} loss")
+                epoch_loss += loss.item()
+            L.info(f"Epoch {epoch} loss: {epoch_loss / len(data_loader)}")
+
+            # TODO - set up a validation split
 
         torch.save(model.state_dict(), f"{get_config().mdl_dir}/{TimeSeriesLSTM.NAME}_{ticker}.pth")
 
