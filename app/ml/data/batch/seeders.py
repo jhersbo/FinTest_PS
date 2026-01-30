@@ -181,6 +181,7 @@ class SeedDailyAgg(Job):
                             retries = max_retries
                 except Exception:
                     L.exception(f"Exception thrown while seeding {ticker.ticker} | {date}")
+                    unit.log(f"Exception thrown while seeding {ticker.ticker} | {date}")
                     retries -= 1
                 date = ftdates.prev_weekday(date, ticker.primary_exchange)
         created = await EntityFinder.batch_create(to_create)

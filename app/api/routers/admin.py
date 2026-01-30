@@ -67,55 +67,6 @@ async def get_job(rq_token:str) -> JSONResponse:
         status_code=status.HTTP_200_OK
     )
 
-@router.post("/savedata/daily/{ticker}")
-@auth
-async def post_saveDataDaily(ticker:str) -> JSONResponse:
-    df = await AV.time_series_daily(symbol=ticker)
-    exist = await StockHistory.find_by_ticker(ticker)
-    to_create = []
-    for row in df.itertuples():
-        s = StockHistory(
-            decode=f"{row.date}|{ticker}",
-            date=datetime.date.fromisoformat(row.date),
-            ticker=ticker,
-            _open=row.open,
-            high=row.high,
-            low=row.low,
-            close=row.close,
-            volume=row.volume
-        ) 
-
-        found = False
-        for sh in exist:
-            if sh.decode == s.decode:
-                found = True
-
-        if not found:
-            to_create.append(s)
-    
-    created = await StockHistory.batch_create(to_create)
-    return JSONResponse(
-        {
-            "result": "Ok",
-            "subject": f"{created} records created"
-        },
-        status_code=status.HTTP_201_CREATED
-    )
-
-@router.post("/savedata/daily")
-@auth
-async def post_saveAllDataDaily() -> JSONResponse:
-
-
-
-    return JSONResponse(
-        {
-            "result": "Ok",
-            "subject": ""
-        },
-        status_code=status.HTTP_201_CREATED
-    )
-
 @router.post("/seed/tickers/{market}")
 @auth
 async def post_seedTickers(market:str) -> JSONResponse:

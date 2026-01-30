@@ -17,6 +17,24 @@ class TickerTimeseries(View):
     ticker:Mapped[String] = mapped_column(
         String
     )
+    date:Mapped[DATE] = mapped_column(
+        DATE
+    )
+    open:Mapped[DOUBLE_PRECISION] = mapped_column(
+        DOUBLE_PRECISION
+    )
+    close:Mapped[DOUBLE_PRECISION] = mapped_column(
+        DOUBLE_PRECISION
+    )
+    high:Mapped[DOUBLE_PRECISION] = mapped_column(
+        DOUBLE_PRECISION
+    )
+    low:Mapped[DOUBLE_PRECISION] = mapped_column(
+        DOUBLE_PRECISION
+    )
+    volume:Mapped[INTEGER] = mapped_column(
+        INTEGER
+    )
     sma_value:Mapped[DOUBLE_PRECISION] = mapped_column(
         DOUBLE_PRECISION
     )
@@ -49,7 +67,7 @@ class TickerTimeseries(View):
         try:
             stmt = select(TickerTimeseries).where(
                 TickerTimeseries.ticker_gid==ticker.gid
-            )
+            ).order_by(TickerTimeseries.date)
             tups = await session.execute(statement=stmt)
             return [t[0] for t in tups]
         finally:
