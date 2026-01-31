@@ -71,7 +71,6 @@ class SeedTickers(Job):
 
         unit.log("Job completed successfully")
 
-
 class SeedSMA(Job):
 
     def run(self, unit):

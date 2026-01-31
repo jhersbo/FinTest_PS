@@ -2,6 +2,7 @@ from sqlalchemy import BIGINT, String, JSON, BOOLEAN, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.entity_finder import EntityFinder
+from app.ml.prediction.predictable import Predictable
 from app.ml.training.trainable import Trainable
 
 # from ....core.models.entity import Entity
@@ -30,6 +31,10 @@ class ModelType(FindableEntity):
         String,
         nullable=False
     )
+    predictor_name:Mapped[String] = mapped_column(
+        String,
+        nullable=False
+    )
 
     @staticmethod
     async def find_by_gid(gid:int) -> "ModelType":
@@ -41,7 +46,7 @@ class ModelType(FindableEntity):
             await session.close()
 
     @staticmethod
-    async def create(model_name:str, trainer_name:str, config:dict={}, is_available:bool=True):
+    async def create(model_name:str, trainer_name:str, predictor_name:str, config:dict={}, is_available:bool=True):
         session = await get_session()
         try:
             M = ModelType()
@@ -52,6 +57,7 @@ class ModelType(FindableEntity):
             M.config=config
             M.is_available = is_available
             M.trainer_name = trainer_name
+            M.predictor_name = predictor_name
 
             async with session.begin():
                 session.add(M)
@@ -79,4 +85,8 @@ class ModelType(FindableEntity):
 
     def find_trainer(self) -> Trainable:
         c = EntityFinder.resolve(self.trainer_name)
+        return c()
+    
+    def find_predictor(self) -> Predictable:
+        c = EntityFinder.resolve(self.predictor_name)
         return c()

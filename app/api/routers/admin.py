@@ -10,13 +10,14 @@ from pydantic import BaseModel
 from rq.exceptions import NoSuchJobError
 
 from app.core.utils.logger import get_logger
+from app.ml.prediction.ts_lstm import Predictor as TSLSTM_Predictor
 from app.ml.training.ts_lstm import Trainer as TSLSTM_Trainer
 from ..utils.security import auth
-from ...ml.data.models.stock_history import StockHistory
 from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.core.models.model_type import ModelType
 from ...ml.training.simple_price_lstm import Trainer as SPLSTM_Trainer
+from app.ml.prediction.simple_price_lstm import Predictor as SPLSTM_Predictor
 from ...ml.data.batch.seeders import SeedDailyAgg, SeedTickers, SeedSMA
 from ...batch.redis_queue import RedisQueue
 
@@ -177,13 +178,15 @@ async def post_seedModels() -> JSONResponse:
             model_name="SimplePriceLSTM",
             config={},
             is_available=True,
-            trainer_name=SPLSTM_Trainer().get_class_name()
+            trainer_name=SPLSTM_Trainer().get_class_name(),
+            predictor_name=SPLSTM_Predictor().get_class_name()
         ),
         ModelType(
             model_name="TimeSeriesLSTM",
             config={},
             is_available=True,
-            trainer_name=TSLSTM_Trainer().get_class_name()
+            trainer_name=TSLSTM_Trainer().get_class_name(),
+            predictor_name=TSLSTM_Predictor().get_class_name()
         )
     ]
 
@@ -193,13 +196,14 @@ async def post_seedModels() -> JSONResponse:
     for m in models:
         found = await ModelType.find_by_name(m.model_name)
         if not found:
-            await ModelType.create(m.model_name, m.trainer_name, m.config, m.is_available)
+            await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.config, m.is_available)
             created += 1
         else:
             if not m.equals(found):
                 found.config = m.config
                 found.is_available = m.is_available
                 found.trainer_name = m.trainer_name
+                found.predictor_name = m.predictor_name
                 await found.update()
                 updated += 1
     

@@ -6,9 +6,28 @@ import pandas as pd
 
 from sklearn.preprocessing import MinMaxScaler
 
+from app.ml.prediction.predictable import Predictable
+
 from ..model_defs.lstm import LSTMModel
 from ..data.models.stock_history import StockHistory
 from ...core.config.config import get_config
+
+
+class Predictor(Predictable):
+    def __init__(self):
+        super().__init__()
+
+    def predict(self):
+        return super().predict()
+    
+    def get_class_name(self):
+        return f"{__name__}.Predictor"
+    
+    def __prep_sequence__(self):
+        return super().__prep_sequence__()
+    
+    def __load_model__(self):
+        return super().__load_model__()
 
 def __load_model__(path:str, input_size:int) -> LSTMModel:
     model = LSTMModel(input_size=input_size)
@@ -24,7 +43,7 @@ def __prep_sequence__(df:pd.DataFrame, feature_cols:list[str], seq_len:int, scal
 
 def __predict_next__(model:LSTMModel, input_tensor:torch.Tensor) -> float:
     with torch.no_grad():
-        output = model(input_tensor)
+        output:torch.Tensor = model(input_tensor)
         return output.item()
     
 async def predict(ticker:str, seq_length:int, artifact:str) -> float: # TODO - figure out how to make this accessible for other models?
