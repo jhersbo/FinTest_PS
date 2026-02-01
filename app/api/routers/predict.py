@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.core.utils.logger import get_logger
 from app.ml.core.models.model_type import ModelType
+from app.ml.model_defs.model_facade import ModelFacade
 from ..utils.security import auth
 from ...ml.prediction.simple_price_lstm import predict
 
@@ -30,7 +31,7 @@ class TickerPredictPayload(BaseModel):
 async def post_ticker(payload:TickerPredictPayload) -> JSONResponse: # TODO - eventually add more query parameters
     # result = await predict(ticker=ticker, seq_length=seq_length, artifact=artifact)
     model = await ModelType.find_by_name(payload.model_name)
-    predictor = model.find_predictor()
+    predictor = ModelFacade.predictor_for(model)
     predictor.configure(payload.config)
 
     result = await predictor.predict()
