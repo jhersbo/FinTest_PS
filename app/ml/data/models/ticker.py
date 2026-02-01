@@ -1,13 +1,17 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, TIMESTAMP, BOOLEAN, select, update
+from sqlalchemy import String, TIMESTAMP, BOOLEAN, select
 
-from ....core.db.session import batch_create, get_session
-from ....core.models.entity import Entity
+from app.core.db.entity_finder import EntityFinder
 
-class StockTicker(Entity):
-    __tablename__ = "stock_tickers"
+from ....core.models.globalid import GlobalId
+from ....core.db.session import get_session
+from ....core.models.entity import FindableEntity
+
+class Ticker(FindableEntity):
+    __tablename__ = "core_ticker"
+    __name__ = f"{__name__}.Ticker"
 
     ticker:Mapped[String] = mapped_column(
         String,
@@ -19,12 +23,14 @@ class StockTicker(Entity):
         nullable=False
     )
     primary_exchange:Mapped[String] = mapped_column(
+        String
+    )
+    market:Mapped[String] = mapped_column(
         String,
         nullable=False
     )
     type:Mapped[String] = mapped_column(
-        String,
-        nullable=False
+        String
     )
     currency:Mapped[String] = mapped_column(
         String,
@@ -44,68 +50,69 @@ class StockTicker(Entity):
     )
 
     @staticmethod
-    async def findByTicker(ticker:str) -> "StockTicker":
+    async def findByTicker(ticker:str) -> "Ticker":
         """
-        Finds StockTicker object by ticker value
+        Finds Ticker object by ticker value
         """
         session = await get_session()
         try:
-            stmt = select(StockTicker).where(StockTicker.ticker == ticker)
+            stmt = select(Ticker).where(Ticker.ticker == ticker)
             return await session.scalar(statement=stmt)
         finally:
             await session.close()
 
     @staticmethod
-    async def findAll() -> list["StockTicker"]:
+    async def findAll() -> list["Ticker"]:
         """
         Finds all tickers
         """
         session = await get_session()
         try:
-            stmt = select(StockTicker)
+            stmt = select(Ticker)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 
     @staticmethod
-    async def findAll(type:str) -> list["StockTicker"]:
+    async def findAllByMarket(market:str) -> list["Ticker"]:
         session = await get_session()
         try:
-            stmt = select(StockTicker).where(StockTicker.type == type)
+            stmt = select(Ticker).where(Ticker.market == market)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 
     @staticmethod
-    async def create(ticker:str, name:str, currency:str, active:bool=True) -> "StockTicker":
+    async def create(ticker:str, name:str, primary_exchange:str, currency:str, type:str, market:str, active:bool=True) -> "Ticker":
         ts = datetime.now(timezone.utc)
         session = await get_session()
         try:
-            S = StockTicker(
-                ticker=ticker,
-                name=name,
-                currency=currency,
-                active=active,
-                last_audit=ts,
-                created=ts
-            )
+
+            T = Ticker()
+            gid = await GlobalId.allocate(T)
+
+            T.gid = gid.gid
+            T.ticker = ticker
+            T.name = name
+            T.primary_exchange = primary_exchange
+            T.currency = currency
+            T.type = type
+            T.market = market
+            T.active = active
+            T.last_audit = ts
+            T.created = ts
+
             async with session.begin():
-                session.add(S)
-            return S
+                session.add(T)
+            return T
         finally:
             await session.close()
 
     @staticmethod
-    async def batch_create(tickers:list["StockTicker"]) -> int:
-        return await batch_create(tickers)
+    async def batch_create(tickers:list["Ticker"]) -> int:
+        return await EntityFinder.batch_create(tickers)
     
     async def update(self) -> None:
         session = await get_session()
@@ -114,15 +121,4 @@ class StockTicker(Entity):
                 session.add(self)
         finally:
             await session.close()
-
-    def equals(self, obj:"StockTicker"):
-        if type(self) != type(obj):
-            return False
-        return (
-            self.ticker == obj.ticker 
-            and self.name == obj.name 
-            and self.primary_exchange == obj.primary_exchange 
-            and self.currency == obj.currency 
-            and self.active == obj.active
-        )
         

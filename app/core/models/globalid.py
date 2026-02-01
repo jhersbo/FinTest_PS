@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import BIGINT, TIMESTAMP, BOOLEAN, String, select
-from sqlalchemy.orm import Mapped, mapped_column, Session
+from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.session import get_session
 from ..models.entity import Entity

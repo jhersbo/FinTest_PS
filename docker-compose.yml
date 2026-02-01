@@ -44,11 +44,14 @@ services:
     image: redis:7
     env_file:
       - .env
+    environment:
+      - REDIS_PORT=${REDIS_PORT}
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
   rq-worker:
     build: .
-    command: rq worker long short --url redis://redis:${REDIS_PORT}
+    command: rq worker long short --url redis://redis:${REDIS_PORT} --with-scheduler
+    scale: 2
     volumes:
       - .:/app
     env_file:

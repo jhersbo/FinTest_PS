@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+from typing import Any
 from app.batch.models.job_unit import JobUnit
 
 
@@ -14,13 +16,28 @@ class Job:
             ...
     """
 
-    config:dict[str, str] = {}
+    config:dict[str, Any] = {}
 
     def run(self, unit:JobUnit) -> None:
         unit.start_job()
 
+    async def _run(self, unit:JobUnit) -> None:
+        """
+        This method can be implemented for async behavior in jobs
+        """
+        raise NotImplementedError("Child must implement this method")
+    
     def configure(self, config:dict) -> None:
-        self.config = config
+        self.config = {k: v for k, v in config.items() if v is not None}
 
     def get_class_name(self) -> str:
         raise NotImplementedError("Child must implement this method")
+    
+    @staticmethod
+    def now() -> datetime:
+        """
+        Can use this method for job timestamps when needed
+        :return: Datetime object for now
+        :rtype: datetime
+        """
+        return datetime.now(timezone.utc)

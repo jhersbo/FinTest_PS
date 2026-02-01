@@ -1,11 +1,9 @@
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Session
-from .db import AsyncSessionLocal, SyncSessionLocal
+from sqlalchemy.orm import Session
 
-# Chunk size for batch operations
-BATCH_CHUNK_SIZE = 1000
+from .db import AsyncSessionLocal, SyncSessionLocal
 
 async def inject_db() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -56,18 +54,6 @@ async def query(q: str):
     """
     raise NotImplementedError("Function not implemented")
 
-async def batch_create(objects:list[DeclarativeBase]) -> int:
-    created = 0
-    session = await get_session()
-    try:
-        async with session.begin():
-            payload = []
-            for i in range(len(objects)):
-                created += 1
-                payload.append(objects[i])
-                if (i % BATCH_CHUNK_SIZE == 0) or i == len(objects) - 1:
-                    session.add_all(payload)
-                    payload = []
-        return created
-    finally:
-        await session.close()
+
+async def batch_create(objects:list):
+    raise NotImplementedError()

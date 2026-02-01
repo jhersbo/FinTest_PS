@@ -1,6 +1,38 @@
+from typing import Any
+
 from sqlalchemy import BIGINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 import pandas as pd
+
+def __to_dict__(obj:object) -> dict[str, Any]:
+    return {
+        k: v for k,v in vars(obj).items() if not k.startswith(("_","<","s_id"))
+    }
+
+class View(DeclarativeBase):
+    """
+    The parent class for all DB views.
+    """
+
+    __is_view__ = True
+
+    def __repr__(self):
+        s = f"table_name: {self.__tablename__}\n"
+        for key in self.__dict__.keys():
+            val = getattr(self, key)
+            if val is not None and not str(val).startswith("<"):
+                s += f"{key}: {val}\n"
+        return s
+    
+    def equals(self, obj:"View") -> bool:
+        if not obj:
+            return False
+        return self.to_dict() == obj.to_dict()
+
+    def to_dict(self) -> dict[str, Any]:
+        return __to_dict__(self)
+
+    def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
 class Entity(DeclarativeBase):
     """
@@ -16,29 +48,18 @@ class Entity(DeclarativeBase):
         return s
     
     def equals(self, obj:"Entity") -> bool:
-        if type(self) != type(obj):
+        if not obj:
             return False
-        for key in self.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
+        return self.to_dict() == obj.to_dict()
 
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        for key in obj.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
+    def to_dict(self) -> dict[str, Any]:
+        return __to_dict__(self)
 
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        return True
-    
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
 class FindableEntity(DeclarativeBase):
     """
-    The child class for all DB tables which implement a global ID
+    The parent class for all DB tables which implement a global ID
     """
     gid:Mapped[BIGINT] = mapped_column(
         BIGINT,
@@ -59,22 +80,11 @@ class FindableEntity(DeclarativeBase):
         return s
     
     def equals(self, obj:"FindableEntity") -> bool:
-        if type(self) != type(obj):
+        if not obj:
             return False
-        for key in self.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
+        return self.to_dict() == obj.to_dict()
 
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        for key in obj.__dict__.keys():
-            s_val = getattr(self, key)
-            o_val = getattr(obj, key)
-
-            if not s_val or not o_val or s_val != o_val:
-                return False
-            
-        return True
+    def to_dict(self) -> dict[str, Any]:
+        return __to_dict__(self)
     
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method

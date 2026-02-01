@@ -1,13 +1,14 @@
-from typing import Union
+from typing import Any
 
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.core.utils.logger import get_logger
+from app.ml.core.models.training_run import TrainingRun
+from app.ml.model_defs.model_facade import ModelFacade
 from ..utils.security import auth
 from ...batch.redis_queue import RedisQueue
-from ...ml.training.simple_price_lstm import Trainer
 from ...ml.core.models.model_type import ModelType
 
 
@@ -23,20 +24,16 @@ L = get_logger(__name__)
 ####################
 
 class TickerTrainPayload(BaseModel):
-    ticker:str
-    epochs:int
+    model_name:str
+    config:dict[str, Any]
 
-
-@router.post("/{model_name}")
+@router.post("/ticker")
 @auth
-async def post_(model_name:str, payload:TickerTrainPayload) -> JSONResponse:
-    config = {
-        "ticker": payload.ticker,
-        "epochs": payload.epochs
-    }
-    model = await ModelType.find_by_name(model_name)
-    trainer = model.find_trainer()
-    trainer.configure(config=config)
+async def post_ticker(payload:TickerTrainPayload) -> JSONResponse:
+    model = await ModelType.find_by_name(payload.model_name)
+    trainer = ModelFacade.trainer_for(model)
+    trainer.training_run = await TrainingRun.create(model)
+    trainer.configure(payload.config)
 
     Q = RedisQueue.get_queue("long")
     job = await Q.put(trainer)

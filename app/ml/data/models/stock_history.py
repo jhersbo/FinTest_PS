@@ -55,10 +55,7 @@ class StockHistory(Entity):
         try:
             stmt = select(StockHistory).where(StockHistory.ticker == ticker).order_by(StockHistory.date.desc())
             tups =  await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 
@@ -74,10 +71,7 @@ class StockHistory(Entity):
                 and StockHistory.date <= date
                 ).order_by(StockHistory.date.desc())
             tups =  await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()
 

@@ -52,10 +52,7 @@ class _JobStats(Entity):
         try:
             stmt = select(_JobStats).where(_JobStats.gid_job_unit==gid_job_unit)
             tups = session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             session.close()
 
@@ -117,10 +114,7 @@ class _JobLog(Entity):
         try:
             stmt = select(_JobLog).where(_JobLog.gid_job_unit==gid_job_unit)
             tups = session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             session.close()
 
@@ -141,6 +135,9 @@ class JobUnit(FindableEntity):
     __tablename__ = "job_unit"
     __name__ = f"{__name__}.JobUnit"
 
+    rq_token:Mapped[String] = mapped_column(
+        String
+    )
     failed:Mapped[BOOLEAN] = mapped_column(
         BOOLEAN,
         nullable=False
@@ -246,6 +243,15 @@ class JobUnit(FindableEntity):
             J.value = (float(J.value) + float(value))
         self._stats[key] = J
 
+    def stat(self, key:str, value:float) -> None:
+        J = None
+        if not self._stats.get(key):
+            J = _JobStats.create(self.gid, key=key, value=value)
+        else:
+            J = self._stats[key]
+            J.value = value
+        self._stats[key] = J
+
     @staticmethod
     async def create() -> "JobUnit":
         now = datetime.now(timezone.utc)
@@ -255,6 +261,7 @@ class JobUnit(FindableEntity):
 
             gid = await GlobalId.allocate(J)
             J.gid = gid.gid
+            J.rq_token = None
             J.failed = False
             J.ack = None
             J.created = now
@@ -264,6 +271,18 @@ class JobUnit(FindableEntity):
             async with session.begin():
                 session.add(J)
             return J
+        except:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+    async def update(self) -> bool:
+        session = await get_session()
+        try:
+            async with session.begin():
+                session.add(self)
+            return True
         except:
             await session.rollback()
             raise

@@ -1,9 +1,13 @@
-from typing import Optional
+from datetime import date
+import traceback
+from typing import Any, Optional
 from requests import get
 
 import pandas as pd
 from polygon import RESTClient
 import numpy as np
+
+from app.ml.data.models.ticker import Ticker
 
 from .client_utils import ratelimit
 from app.core.utils.logger import get_logger
@@ -16,6 +20,7 @@ class PolygonClient():
     """
 
     URL_BASE = "https://api.polygon.io"
+    RL = 12
 
     def __init__(self) -> None:
         CONFIG = get_config()
@@ -76,13 +81,13 @@ class PolygonClient():
         return df
         
     @ratelimit()
-    async def getSMA(self, ticker:str, window:int=50, limit:int=5000) -> Optional[pd.DataFrame]:
+    async def getSMA(self, ticker:str, timespan:str="day", window:int=50, series_type:str="close", limit:int=5000) -> Optional[pd.DataFrame]:
         resp = self.REST.get_sma(
             ticker=ticker,
-            timespan="day",
+            timespan=timespan,
             adjusted="true",
             window=window,
-            series_type="close",
+            series_type=series_type,
             order="desc",
             limit=limit,
         )
@@ -92,6 +97,22 @@ class PolygonClient():
 
         return df
     
+    @ratelimit(rl_limit=RL)
+    async def getDailyAgg(self, ticker:Ticker, date:str|date, adjusted:bool=True) -> dict[str, Any]:
+        try:
+            resp = self.REST.get_daily_open_close_agg(
+            ticker=ticker.ticker,
+            date=date,
+            adjusted=adjusted
+            )
+            status = resp.__dict__.get("status")
+            if not status or status != "OK":
+                return None
+            resp.__dict__["date"] = resp.__dict__["from_"]
+            return resp.__dict__
+        except Exception:
+            L.exception(f"Failed to retrieve daily agg for {ticker.ticker} | {str(date)}")
+            return None
     ##############
     # UTIL METHODS
     ##############

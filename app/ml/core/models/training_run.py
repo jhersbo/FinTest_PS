@@ -1,19 +1,21 @@
 from datetime import datetime, timezone
-from enum import Enum
+from typing import Any
 
 from sqlalchemy import BIGINT, String, JSON, TIMESTAMP, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ....core.db.session import get_session
+from app.batch.models.job_unit import JobUnit
+from app.ml.core.models.model_type import ModelType
+
+from ....core.db.session import get_session, get_sync_session
 from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
-from .model_type import ModelType
 
 class RunStatus:
     PENDING = "PENDING"
     RUNNING = "RUNNING"
+    COMPLETE = "COMPLETE"
     FAILED = "FAILED"
-
 
 class TrainingRun(FindableEntity):
     __tablename__ = "training_run"
@@ -24,16 +26,7 @@ class TrainingRun(FindableEntity):
         nullable=False
     )
     gid_job_unit:Mapped[BIGINT] = mapped_column(
-        BIGINT,
-        nullable=False
-    )
-    start:Mapped[TIMESTAMP] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=True
-    )
-    end:Mapped[TIMESTAMP] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=True
+        BIGINT
     )
     data:Mapped[JSON] = mapped_column(
         JSON,
@@ -49,7 +42,7 @@ class TrainingRun(FindableEntity):
     )
 
     @staticmethod
-    async def create(model:ModelType) -> "TrainingRun":
+    async def create(model:ModelType, unit:JobUnit=None, data:dict[str, Any]={}) -> "TrainingRun":
         if not model:
             raise RuntimeError("No model given")
         
@@ -61,12 +54,11 @@ class TrainingRun(FindableEntity):
 
             gid = await GlobalId.allocate(T)
             T.gid = gid.gid
-            T.gid_model_type = model.id
-            T.start = None
-            T.end = None
-            T.data = {}
+            T.gid_model_type = model.gid
+            T.gid_job_unit = unit.gid if unit else None
+            T.data = data
             T.status = RunStatus.PENDING
-            T.created  = now
+            T.created = now
 
             async with session.begin():
                 session.add(T)
@@ -82,24 +74,29 @@ class TrainingRun(FindableEntity):
         finally:
             await session.close()
 
+    def _update(self) -> None:
+        session = get_sync_session()
+        try:
+            with session.begin():
+                session.add(self)
+        finally:
+            session.close()
+
     @staticmethod
-    async def find_by_id(id:int) -> "TrainingRun":
+    async def find_by_id(gid:int) -> "TrainingRun":
         session = await get_session()
         try:
-            stmt = select(TrainingRun).where(TrainingRun.id==id)
+            stmt = select(TrainingRun).where(TrainingRun.gid==gid)
             return await session.scalar(statement=stmt)
         finally:
             await session.close()
     
     @staticmethod
-    async def find_by_model(model:ModelType) -> list["TrainingRun"]:
+    async def find_by_model(gid_model_type:int) -> list["TrainingRun"]:
         session = await get_session()
         try:
-            stmt = select(TrainingRun).where(TrainingRun.gid_model_type==model.id)
+            stmt = select(TrainingRun).where(TrainingRun.gid_model_type==gid_model_type)
             tups = await session.execute(statement=stmt)
-            result = []
-            for t in tups:
-                result.append(t[0])
-            return result
+            return [t[0] for t in tups]
         finally:
             await session.close()

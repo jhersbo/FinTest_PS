@@ -1,19 +1,23 @@
 from redis import Redis
-from rq import Queue, Callback
+from rq import Queue
 from rq.job import Job as rqJob
 
 from app.batch.models.job_unit import JobUnit
+from app.core.config.config import get_config
+from app.core.utils.logger import get_logger
 
 from .job import Job
 
+L = get_logger(__name__)
+
 class RedisQueue:
-    REDIS_PORT = 6379
+    REDIS_PORT = get_config().redis_port
     REDIS_SERVICE = "redis"
     QUEUE_CACHE = {
         "long": None,
         "short": None
     }
-    DEFAULT_TIMEOUT = 1000
+    DEFAULT_TIMEOUT = 100000
 
     def __init__(self, queue: Queue):
         self.Q:Queue = queue
@@ -23,17 +27,27 @@ class RedisQueue:
         _job = self.Q.enqueue(job.run, args=(unit,), job_timeout=RedisQueue.DEFAULT_TIMEOUT, on_success=end, on_failure=fail)
         _job.meta["gid_job_unit"] = unit.gid
         _job.save()
+        unit.rq_token = _job.id
+        await unit.update()
         return _job
 
     @staticmethod
-    def get_queue(name:str="default") -> "RedisQueue":
+    def get_queue(name) -> "RedisQueue":
         if not RedisQueue.QUEUE_CACHE.get(name):
-            conn = Redis(RedisQueue.REDIS_SERVICE, RedisQueue.REDIS_PORT, db=0)
+            conn = RedisQueue.__connection__()
             Q = Queue(connection=conn, name=name)
             RQ = RedisQueue(Q)
             RedisQueue.QUEUE_CACHE[Q.name] = RQ
             return RQ
         return RedisQueue.QUEUE_CACHE.get(name)
+    
+    @staticmethod
+    def find_job(rq_token:str) -> rqJob:
+        return rqJob.fetch(rq_token, connection=RedisQueue.__connection__())
+
+    @staticmethod
+    def __connection__() -> Redis:
+        return Redis(RedisQueue.REDIS_SERVICE, RedisQueue.REDIS_PORT, db=0)
 
 def end(job:rqJob, *args, **kwargs) -> None:
     # TODO - maybe we add job logs here
