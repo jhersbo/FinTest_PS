@@ -243,6 +243,15 @@ class JobUnit(FindableEntity):
             J.value = (float(J.value) + float(value))
         self._stats[key] = J
 
+    def stat(self, key:str, value:float) -> None:
+        J = None
+        if not self._stats.get(key):
+            J = _JobStats.create(self.gid, key=key, value=value)
+        else:
+            J = self._stats[key]
+            J.value = value
+        self._stats[key] = J
+
     @staticmethod
     async def create() -> "JobUnit":
         now = datetime.now(timezone.utc)
