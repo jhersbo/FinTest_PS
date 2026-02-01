@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 from typing import Any
 import joblib
 import pandas as pd
@@ -9,6 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 from app.batch.models.job_unit import JobUnit
 from app.core.config.config import get_config
 from app.core.utils.logger import get_logger
+from app.ml.core.models.training_run import RunStatus
 from app.ml.data.models.ticker import Ticker
 from app.ml.data.models.vw_ticker_timeseries import TickerTimeseries
 from app.ml.model_defs.lstm import LSTMModel
@@ -22,8 +24,15 @@ class Trainer(Trainable):
     
     def run(self, unit):
         super().run(unit)
-        asyncio.run(TimeSeriesLSTM.train(unit, self.config))
-    
+        try:
+            asyncio.run(TimeSeriesLSTM.train(unit, self.config))
+            self.training_run.status = RunStatus.COMPLETE
+        except:
+            self.training_run.status = RunStatus.FAILED
+            raise
+        finally:
+            self.training_run._update()
+
     def get_class_name(self):
         return f"{__name__}.Trainer"
     
@@ -71,6 +80,9 @@ class TimeSeriesLSTM(Dataset):
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters())
         
+        #stats
+        epoch_losses = []
+
         for epoch in range(epochs):
             L.info(f"Seq {epoch} of {epochs} epochs...")
             epoch_loss = 0
@@ -82,7 +94,9 @@ class TimeSeriesLSTM(Dataset):
                 loss.backward()
                 optimizer.step()
                 epoch_loss += loss.item()
-            L.info(f"Epoch {epoch} loss: {epoch_loss / len(data_loader)}")
+            mean_loss = epoch_loss / len(data_loader)
+            L.info(f"Epoch {epoch} mean loss: {mean_loss}")
+            epoch_losses.append(mean_loss)
 
             # TODO - set up a validation split
 

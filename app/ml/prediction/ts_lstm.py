@@ -60,9 +60,10 @@ class Predictor(Predictable):
             return output
     
     def __prep_sequence__(self):
+        self.df = self.df.sort_values(by="date", ascending=False)
         values = self.df[self.features].values
         scaled = self.scaler.transform(values)
-        seq = scaled[0:self.seq_length]
+        seq = scaled[:self.seq_length]
         return torch.tensor(seq, dtype=torch.float32).unsqueeze(0)
     
     def __load_model__(self):

@@ -1,11 +1,6 @@
-from sqlalchemy import BIGINT, String, JSON, BOOLEAN, select
+from sqlalchemy import String, JSON, BOOLEAN, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db.entity_finder import EntityFinder
-from app.ml.prediction.predictable import Predictable
-from app.ml.training.trainable import Trainable
-
-# from ....core.models.entity import Entity
 from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
 from ....core.db.session import get_session
@@ -82,11 +77,3 @@ class ModelType(FindableEntity):
             return await session.scalar(statement=stmt)
         finally:
             await session.close()
-
-    def find_trainer(self) -> Trainable:
-        c = EntityFinder.resolve(self.trainer_name)
-        return c()
-    
-    def find_predictor(self) -> Predictable:
-        c = EntityFinder.resolve(self.predictor_name)
-        return c()
