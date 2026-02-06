@@ -34,6 +34,8 @@ class Predictor(Predictable):
         self.features:list[str] = self.config.get("features")
         self.seq_length = self.config.get("seq_length")
         self.artifact = self.config.get("artifact")
+        self.num_layers = self.config.get("num_layers")
+        self.hidden_size = self.config.get("hidden_size")
 
         self.dict_path = f"{get_config().mdl_dir}/{Predictor.NAME}_{self.ticker.ticker}.pth"
         self.scaler:MinMaxScaler = joblib.load(f"{get_config().obj_dir}/{Predictor.NAME}_{self.ticker.ticker}_scaler.pkl")
@@ -67,7 +69,7 @@ class Predictor(Predictable):
         return torch.tensor(seq, dtype=torch.float32).unsqueeze(0)
     
     def __load_model__(self):
-        model = LSTMModel(input_size=self.input_size, output_size=self.input_size)
+        model = LSTMModel(input_size=self.input_size, hidden_size=self.hidden_size, num_layers=self.num_layers, output_size=self.input_size)
         model.load_state_dict(torch.load(self.dict_path))
         model.eval()
         return model

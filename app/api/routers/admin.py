@@ -2,13 +2,12 @@
 A series of endpoints that are used mostly for testing, but can be used
 to trigger daily data processes
 """
-import datetime
-
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from rq.exceptions import NoSuchJobError
 
+from app.batch.models.job_unit import JobUnit
 from app.core.utils.logger import get_logger
 from app.ml.prediction.ts_lstm import Predictor as TSLSTM_Predictor
 from app.ml.training.ts_lstm import Trainer as TSLSTM_Trainer
@@ -56,7 +55,6 @@ async def get_job(rq_token:str) -> JSONResponse:
         )
     except NoSuchJobError:
         L.exception("No such job")
-        pass
 
     return JSONResponse(
         {
@@ -120,11 +118,13 @@ async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
 
     Q = RedisQueue.get_queue("long")
     job = await Q.put(_job)
+    job_unit = await JobUnit.find_by_rqtoken(job.id)
 
     return JSONResponse(
         {
             "result": "Ok",
             "subject": {
+                "job_unit": job_unit.gid,
                 "job_id": f"{job.id}",
                 "job_status": f"{job.get_status()}"
             }

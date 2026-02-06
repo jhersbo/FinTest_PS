@@ -67,7 +67,6 @@ class _JobStats(Entity):
         finally:
             session.close()
 
-
 class _JobLog(Entity):
     __tablename__ = "job_log"
     __name__ = f"{__name__}._JobLog"
@@ -177,6 +176,15 @@ class JobUnit(FindableEntity):
             return session.scalar(statement=stmt)
         finally:
             session.close()
+
+    @staticmethod
+    async def find_by_rqtoken(rq_token:int) -> "JobUnit":
+        session = await get_session()
+        try:
+            stmt = select(JobUnit).where(JobUnit.rq_token==rq_token)
+            return session.scalar(statement=stmt)
+        finally:
+            await session.close()
 
     def start_job(self) -> bool:
         self.start = datetime.now(timezone.utc)

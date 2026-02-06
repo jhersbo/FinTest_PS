@@ -72,11 +72,13 @@ class TimeSeriesLSTM(Dataset):
         ticker = config.get("ticker")
         f_cols = config.get("f_cols")
         epochs = config.get("epochs")
+        hidden_size = config.get("hidden_size")
+        num_layers = config.get("num_layers")
 
         data_set = TimeSeriesLSTM(df, ticker=ticker, feature_cols=f_cols)
         data_loader = DataLoader(data_set, batch_size=32)
 
-        model = LSTMModel(input_size=len(data_set.f_cols), output_size=len(data_set.f_cols))
+        model = LSTMModel(input_size=len(data_set.f_cols), hidden_size=hidden_size, num_layers=num_layers, output_size=len(data_set.f_cols))
         criterion = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters())
         
