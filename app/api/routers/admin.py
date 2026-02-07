@@ -124,7 +124,7 @@ async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
         {
             "result": "Ok",
             "subject": {
-                "job_unit": job_unit.gid,
+                # "job_unit": job_unit.gid,
                 "job_id": f"{job.id}",
                 "job_status": f"{job.get_status()}"
             }

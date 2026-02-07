@@ -27,10 +27,8 @@ This document describes all configurable parameters for training the LSTM time s
   - `"low"` - Low price
   - `"close"` - Closing price
   - `"volume"` - Trading volume
-  - `"sma_20"` - 20-day Simple Moving Average
-  - `"sma_50"` - 50-day Simple Moving Average
-  - `"sma_200"` - 200-day Simple Moving Average
-- **Example**: `["open", "high", "low", "close", "volume", "sma_20"]`
+  - `"sma_value"` - Simple moving average
+- **Example**: `["open", "high", "low", "close", "volume", "sma_value"]`
 - **Required**: Yes
 - **Notes**:
   - All features are scaled together using MinMaxScaler
@@ -292,7 +290,7 @@ Epoch 26: LR reduced to 0.00025 (if still not improving)
 ```json
 {
   "ticker": "AAPL",
-  "f_cols": ["open", "high", "low", "close", "volume", "sma_20", "sma_50"],
+  "f_cols": ["open", "high", "low", "close", "volume", "sma_value", "sma_value"],
   "epochs": 100,
   "hidden_size": 128,
   "num_layers": 2,
@@ -307,7 +305,7 @@ Epoch 26: LR reduced to 0.00025 (if still not improving)
 ```json
 {
   "ticker": "AAPL",
-  "f_cols": ["open", "high", "low", "close", "volume", "sma_20", "sma_50", "sma_200"],
+  "f_cols": ["open", "high", "low", "close", "volume", "sma_value", "sma_value", "sma_value"],
   "epochs": 200,
   "hidden_size": 256,
   "num_layers": 3,

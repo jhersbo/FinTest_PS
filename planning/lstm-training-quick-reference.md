@@ -38,7 +38,7 @@
 ```json
 {
   "ticker": "AAPL",
-  "f_cols": ["open", "high", "low", "close", "volume", "sma_20"],
+  "f_cols": ["open", "high", "low", "close", "volume", "sma_value"],
   "hidden_size": 128,
   "num_layers": 2,
   "dropout": 0.3,
@@ -63,7 +63,7 @@
 ```json
 {
   "ticker": "AAPL",
-  "f_cols": ["open", "high", "low", "close", "volume", "sma_20", "sma_50"],
+  "f_cols": ["open", "high", "low", "close", "volume", "sma_value", "sma_value"],
   "hidden_size": 256,
   "num_layers": 3,
   "dropout": 0.3,
@@ -139,9 +139,9 @@ artifacts/
 - `low` - Low price
 - `close` - Closing price
 - `volume` - Trading volume
-- `sma_20` - 20-day SMA
-- `sma_50` - 50-day SMA
-- `sma_200` - 200-day SMA
+- `sma_value` - 20-day SMA
+- `sma_value` - 50-day SMA
+- `sma_value` - 200-day SMA
 
 ---
 
