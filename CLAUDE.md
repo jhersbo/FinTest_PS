@@ -29,8 +29,12 @@
 - **pandas** - Data manipulation for timeseries
 
 **Job Queue & Processing**:
-- **Redis** - Message broker and cache
+- **Redis** - Message broker, cache, and rate limiting backend
 - **RQ (Redis Queue)** - Distributed job queue for async training
+
+**Security & Middleware**:
+- **Rate Limiting** - Redis-backed sliding window rate limiter (100 req/min per IP)
+- **Request Capture** - Logging and request tracking middleware
 
 **Development**:
 - **Python 3.11+** - Type hints and modern Python features
@@ -82,6 +86,13 @@ FinTest_PS/
 - Metrics tracking: train/val losses, learning rates, best epoch
 - GPU auto-detection with CPU fallback
 
+**5. API Security & Rate Limiting** (see [planning/rate-limiter.md](planning/rate-limiter.md))
+- Sliding window rate limiter using Redis sorted sets
+- Per-IP tracking with 100 req/min default limit
+- Standard HTTP 429 responses with rate limit headers
+- Graceful degradation if Redis unavailable
+- Path exemptions for docs and health checks
+
 ### Data Flow
 ```
 API Request → JobQueue → RQ Worker → Trainer.run()
@@ -105,6 +116,8 @@ API Request → JobQueue → RQ Worker → Trainer.run()
 
 **General Conventions**:
 - Double-quotes take priority
+- Type definitions should be obj:Type, not obj: Type
+- Response bodies generally follow this convention -> {"result":"Ok", "subject":{}}
 
 **Class Patterns**:
 - PascalCase for classes: `TimeSeriesLSTM`, `JobUnit`
