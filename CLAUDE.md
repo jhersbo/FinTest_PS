@@ -116,7 +116,7 @@ API Request → JobQueue → RQ Worker → Trainer.run()
 
 **General Conventions**:
 - Double-quotes take priority
-- Type definitions should be obj:Type, not obj: Type
+- Type definitions syntax: `obj:Type` not `obj: Type`
 - Response bodies generally follow this convention -> {"result":"Ok", "subject":{}}
 
 **Class Patterns**:
