@@ -196,7 +196,7 @@ async def post_seedModels() -> JSONResponse:
                 "num_layers":2,
                 "dropout":0.2,
                 "batch_size":64,
-                "learing_rate":0.001,
+                "learning_rate":0.001,
                 "weight_decay":1e-5,
                 "patience":15,
                 "grad_clip":1.0,
@@ -215,7 +215,7 @@ async def post_seedModels() -> JSONResponse:
             created += 1
         else:
             if not m.equals(found):
-                found.config = m.config
+                found.default_config = m.default_config
                 found.is_available = m.is_available
                 found.trainer_name = m.trainer_name
                 found.predictor_name = m.predictor_name

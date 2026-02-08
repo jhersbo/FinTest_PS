@@ -43,10 +43,11 @@ async def post_ticker(payload:TrainingRunPredictPayload) -> JSONResponse:
         training_run.gid, 
         {
             "artifact":payload.artifact,
-            "seq_length":payload.seq_len
+            "seq_len":payload.seq_len
         },
         training_run.data
     )
+    print(config)
     predictor.configure(config)
 
     result = await predictor.predict()
