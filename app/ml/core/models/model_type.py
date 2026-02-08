@@ -14,10 +14,6 @@ class ModelType(FindableEntity):
         unique=True,
         nullable=False
     )
-    config:Mapped[JSON] = mapped_column(
-        JSON,
-        nullable=True
-    )
     is_available:Mapped[BOOLEAN] = mapped_column(
         BOOLEAN,
         nullable=False
@@ -30,6 +26,10 @@ class ModelType(FindableEntity):
         String,
         nullable=False
     )
+    default_config:Mapped[JSON] = mapped_column(
+        JSON,
+        nullable=True
+    )
 
     @staticmethod
     async def find_by_gid(gid:int) -> "ModelType":
@@ -41,7 +41,7 @@ class ModelType(FindableEntity):
             await session.close()
 
     @staticmethod
-    async def create(model_name:str, trainer_name:str, predictor_name:str, config:dict={}, is_available:bool=True):
+    async def create(model_name:str, trainer_name:str, predictor_name:str, default_config:dict={}, is_available:bool=True):
         session = await get_session()
         try:
             M = ModelType()
@@ -49,10 +49,10 @@ class ModelType(FindableEntity):
             gid = await GlobalId.allocate(M)
             M.gid = gid.gid
             M.model_name=model_name
-            M.config=config
             M.is_available = is_available
             M.trainer_name = trainer_name
             M.predictor_name = predictor_name
+            M.default_config = default_config
 
             async with session.begin():
                 session.add(M)
@@ -77,3 +77,5 @@ class ModelType(FindableEntity):
             return await session.scalar(statement=stmt)
         finally:
             await session.close()
+
+    

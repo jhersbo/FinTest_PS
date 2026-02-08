@@ -1,4 +1,4 @@
-
+from typing import Any
 from app.core.db.entity_finder import EntityFinder
 from app.ml.core.models.model_type import ModelType
 from app.ml.prediction.predictable import Predictable
@@ -35,4 +35,17 @@ class ModelFacade():
         """
         c = EntityFinder.resolve(model.predictor_name)
         return c()
+    
+    @staticmethod
+    def build_config(gid_training_run:int, config:dict[str, Any], default:dict[str, Any]={}) -> dict[str, Any]:
+        bad_vals = [
+            "",
+            [],
+            None
+        ]
+        default["gid_training_run"] = gid_training_run
+        for k in config.keys():
+            if config[k] not in bad_vals:
+                default[k] = config[k]
+        return default
     

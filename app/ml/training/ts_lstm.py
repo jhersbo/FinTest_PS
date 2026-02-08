@@ -1,4 +1,5 @@
 import asyncio
+import os
 from datetime import datetime, timezone
 from typing import Any
 import joblib
@@ -41,12 +42,15 @@ class TimeSeriesLSTM(Dataset):
 
     NAME = "TimeSeriesLSTM"
 
-    def __init__(self, df:pd.DataFrame, ticker:str, seq_len:int=10, feature_cols:list[str]=None, scaler:MinMaxScaler=None):
+    def __init__(self, df:pd.DataFrame, ticker:str, gid_training_run:int, seq_len:int=10, feature_cols:list[str]=None, scaler:MinMaxScaler=None):
         self.seq_len = seq_len
         self.f_cols = feature_cols
         self.ticker = ticker
 
         features = df[self.f_cols].values
+
+        if not gid_training_run:
+            raise RuntimeError("Training run GID must be provided")
 
         # Use provided scaler (for validation) or create new one (for training)
         if scaler is not None:
@@ -55,7 +59,7 @@ class TimeSeriesLSTM(Dataset):
         else:
             self.scaler = MinMaxScaler()
             scaled = self.scaler.fit_transform(features)
-            joblib.dump(self.scaler, f"{get_config().obj_dir}/{TimeSeriesLSTM.NAME}_{self.ticker}_scaler.pkl")
+            joblib.dump(self.scaler, f"{get_config().obj_dir}/{gid_training_run}_scaler.pkl")
 
         self.data = torch.tensor(scaled, dtype=torch.float32)
 
@@ -71,23 +75,25 @@ class TimeSeriesLSTM(Dataset):
     async def load(config:dict[str, Any]) -> pd.DataFrame:
         ticker = await Ticker.findByTicker(config.get("ticker"))
         tts = await TickerTimeseries.findByTicker(ticker=ticker)
-        return pd.DataFrame([r.__dict__ for r in tts])
+        df = pd.DataFrame([r.__dict__ for r in tts])
+        return df.sort_values(by="date", ascending=False)
 
     @staticmethod
     async def train(unit:JobUnit, config:dict[str, Any]) -> LSTMModel:
         df = await TimeSeriesLSTM.load(config)
+        gid_training_run = config.get("gid_training_run")
         ticker = config.get("ticker")
         f_cols = config.get("f_cols")
-        epochs = config.get("epochs", 100)
-        hidden_size = config.get("hidden_size", 64)
-        num_layers = config.get("num_layers", 2)
-        dropout = config.get("dropout", 0.2)
-        batch_size = config.get("batch_size", 64)
-        learning_rate = config.get("learning_rate", 0.001)
-        weight_decay = config.get("weight_decay", 1e-5)
-        patience = config.get("patience", 15)
-        grad_clip = config.get("grad_clip", 1.0)
-        train_split = config.get("train_split", 0.8)
+        epochs = config.get("epochs")
+        hidden_size = config.get("hidden_size")
+        num_layers = config.get("num_layers")
+        dropout = config.get("dropout")
+        batch_size = config.get("batch_size")
+        learning_rate = config.get("learning_rate")
+        weight_decay = config.get("weight_decay")
+        patience = config.get("patience")
+        grad_clip = config.get("grad_clip")
+        train_split = config.get("train_split")
 
         # GPU support
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -101,8 +107,19 @@ class TimeSeriesLSTM(Dataset):
         L.info(f"Train size: {len(train_df)}, Validation size: {len(val_df)}")
 
         # Create datasets - validation reuses training scaler
-        train_dataset = TimeSeriesLSTM(train_df, ticker=ticker, feature_cols=f_cols)
-        val_dataset = TimeSeriesLSTM(val_df, ticker=ticker, feature_cols=f_cols, scaler=train_dataset.scaler)
+        train_dataset = TimeSeriesLSTM(
+            train_df, 
+            gid_training_run=gid_training_run, 
+            ticker=ticker, 
+            feature_cols=f_cols
+        )
+        val_dataset = TimeSeriesLSTM(
+            val_df, 
+            gid_training_run=gid_training_run, 
+            ticker=ticker, 
+            feature_cols=f_cols, 
+            scaler=train_dataset.scaler
+        )
 
         train_loader = DataLoader(
             train_dataset,
@@ -198,7 +215,7 @@ class TimeSeriesLSTM(Dataset):
                 best_epoch = epoch
                 patience_counter = 0
                 # Save best model
-                torch.save(model.state_dict(), f"{get_config().mdl_dir}/{TimeSeriesLSTM.NAME}_{ticker}_best.pth")
+                torch.save(model.state_dict(), f"{get_config().mdl_dir}/{gid_training_run}_best.pth")
                 L.info(f"New best model saved! Val Loss: {best_val_loss:.6f}")
             else:
                 patience_counter += 1
@@ -208,10 +225,12 @@ class TimeSeriesLSTM(Dataset):
                 break
 
         # Load best model weights
-        model.load_state_dict(torch.load(f"{get_config().mdl_dir}/{TimeSeriesLSTM.NAME}_{ticker}_best.pth"))
+        model.load_state_dict(torch.load(f"{get_config().mdl_dir}/{gid_training_run}_best.pth"))
 
-        # Save final model (same as best in this case)
-        torch.save(model.state_dict(), f"{get_config().mdl_dir}/{TimeSeriesLSTM.NAME}_{ticker}.pth")
+        # Save final model and clean up checkpoint
+        best_path = f"{get_config().mdl_dir}/{gid_training_run}_best.pth"
+        torch.save(model.state_dict(), f"{get_config().mdl_dir}/{gid_training_run}.pth")
+        os.remove(best_path)
 
         # Save training metrics
         metrics = {
@@ -223,7 +242,7 @@ class TimeSeriesLSTM(Dataset):
             'final_train_loss': train_losses[-1],
             'final_val_loss': val_losses[-1]
         }
-        joblib.dump(metrics, f"{get_config().obj_dir}/{TimeSeriesLSTM.NAME}_{ticker}_metrics.pkl")
+        joblib.dump(metrics, f"{get_config().obj_dir}/{gid_training_run}_metrics.pkl")
 
         unit.log(f"Training complete! Best Val Loss: {best_val_loss:.6f} at epoch {best_epoch+1}")
         L.info(f"Training complete! Best Val Loss: {best_val_loss:.6f} at epoch {best_epoch+1}")

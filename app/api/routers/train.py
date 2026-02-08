@@ -32,8 +32,13 @@ class TickerTrainPayload(BaseModel):
 async def post_ticker(payload:TickerTrainPayload) -> JSONResponse:
     model = await ModelType.find_by_name(payload.model_name)
     trainer = ModelFacade.trainer_for(model)
-    trainer.training_run = await TrainingRun.create(model)
-    trainer.configure(payload.config)
+    training_run = await TrainingRun.create(model=model)
+    config = ModelFacade.build_config(training_run.gid, payload.config, model.default_config)
+    training_run.data = config
+    await training_run.update()
+    
+    trainer.configure(config)
+    trainer.training_run = training_run
 
     Q = RedisQueue.get_queue("long")
     job = await Q.put(trainer)
@@ -42,6 +47,10 @@ async def post_ticker(payload:TickerTrainPayload) -> JSONResponse:
         {
             "result": "Ok",
             "subject": {
+                "training_run": {
+                    "gid": trainer.training_run.gid,
+                    "data": trainer.training_run.data
+                },
                 "job_id": f"{job.id}",
                 "job_status": f"{job.get_status()}"
             }
