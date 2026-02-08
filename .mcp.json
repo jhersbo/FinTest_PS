@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "fintest-db": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f", "../mcp/docker-compose.yml",
+        "run", "--rm", "-i",
+        "fintest_mcp"
+      ]
+    }
+  }
+}
