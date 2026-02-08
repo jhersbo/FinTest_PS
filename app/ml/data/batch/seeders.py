@@ -85,6 +85,8 @@ class SeedSMA(Job):
         _window = conf.get("window", 50)
         _series_type = conf.get("series_type", "close")
         _limit = conf.get("limit", 5000)
+        max_retries = 5
+        retries = max_retries
 
         tickers = []
         to_create = []
@@ -97,8 +99,17 @@ class SeedSMA(Job):
             _t = await Ticker.findByTicker(_ticker)
             tickers = [_t]
         for ticker in tickers:
-            sma = await P.getSMA(ticker=ticker.ticker, timespan=_timespan, window=_window, series_type=_series_type, limit=_limit)
-
+            if retries == 0:
+                break
+            sma = None
+            try:
+                sma = await P.getSMA(ticker=ticker.ticker, timespan=_timespan, window=_window, series_type=_series_type, limit=_limit)
+            except:
+                L.exception(f"Exception thrown while seeding SMA {ticker.ticker}")
+                unit.log(f"Exception thrown while seeding SMA {ticker.ticker}")
+                retries -= 1
+                continue
+            retries = max_retries
             _existing = await SMA.find_by_ticker(ticker)
 
             for row in sma.itertuples(index=False):
