@@ -39,7 +39,7 @@ class Token(FindableEntity):
         nullable=False
     )
     
-    def is_valid(self):
+    def is_valid(self) -> bool:
         if datetime.now(tz=timezone.utc) >= self.expiration:
             return False
         return True
@@ -48,7 +48,7 @@ class Token(FindableEntity):
     # STATIC METHODS
     ###################
     @staticmethod
-    async def create(req: Request):
+    async def create(req: Request) -> "Token":
         """
         Creates a new token in the database for the requesting client
         """
@@ -81,7 +81,7 @@ class Token(FindableEntity):
             await session.close()
 
     @staticmethod
-    async def find_by_token(token:str):
+    async def find_by_token(token:str) -> "Token":
         """
         Finds Token object by token string
         """
