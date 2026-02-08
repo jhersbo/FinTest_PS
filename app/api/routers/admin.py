@@ -135,6 +135,7 @@ async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
 
 class SeedSMAPayload(BaseModel):
     ticker:str=None
+    market:str=None
     timespan:str=None
     window:int=None
     series_type:str=None
@@ -145,6 +146,7 @@ class SeedSMAPayload(BaseModel):
 async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
     config = {
         "ticker": payload.ticker,
+        "market": payload.market,
         "timespan": payload.timespan,
         "window": payload.window,
         "series_type": payload.series_type,
@@ -154,7 +156,7 @@ async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
     _job = SeedSMA()
     _job.configure(config)
 
-    Q = RedisQueue.get_queue("long")
+    Q = RedisQueue.get_queue("short")
     job = await Q.put(_job)
 
     return JSONResponse(
@@ -176,17 +178,30 @@ async def post_seedModels() -> JSONResponse:
     models:list[ModelType] = [
         ModelType(
             model_name="SimplePriceLSTM",
-            config={},
             is_available=True,
             trainer_name=SPLSTM_Trainer().get_class_name(),
-            predictor_name=SPLSTM_Predictor().get_class_name()
+            predictor_name=SPLSTM_Predictor().get_class_name(),
+            default_config={}
         ),
         ModelType(
             model_name="TimeSeriesLSTM",
-            config={},
             is_available=True,
             trainer_name=TSLSTM_Trainer().get_class_name(),
-            predictor_name=TSLSTM_Predictor().get_class_name()
+            predictor_name=TSLSTM_Predictor().get_class_name(),
+            default_config={
+                "ticker": "",
+                "f_cols": [],
+                "epochs":100,
+                "hidden_size":64,
+                "num_layers":2,
+                "dropout":0.2,
+                "batch_size":64,
+                "learing_rate":0.001,
+                "weight_decay":1e-5,
+                "patience":15,
+                "grad_clip":1.0,
+                "train_split":0.8
+            }
         )
     ]
 
@@ -196,7 +211,7 @@ async def post_seedModels() -> JSONResponse:
     for m in models:
         found = await ModelType.find_by_name(m.model_name)
         if not found:
-            await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.config, m.is_available)
+            await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.default_config, m.is_available)
             created += 1
         else:
             if not m.equals(found):

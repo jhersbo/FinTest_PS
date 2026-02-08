@@ -12,33 +12,25 @@ from app.ml.model_defs.lstm import LSTMModel
 from app.ml.prediction.predictable import Predictable
 
 
-L = get_logger()
+L = get_logger(__name__)
 
 class Predictor(Predictable):
-
-    """
-    Config structured as follows:
-
-    ```python
-    {
-        features:list[str],
-        seq_length:int,
-        artifact:str
-    }
-    """
 
     NAME = "TimeSeriesLSTM"
 
     async def predict(self):
-        self.ticker = await Ticker.findByTicker(self.config.get("ticker"))
-        self.features:list[str] = self.config.get("features")
-        self.seq_length = self.config.get("seq_length")
-        self.artifact = self.config.get("artifact")
-        self.num_layers = self.config.get("num_layers")
-        self.hidden_size = self.config.get("hidden_size")
+        gid = self.training_run.gid
+        config = self.config
 
-        self.dict_path = f"{get_config().mdl_dir}/{Predictor.NAME}_{self.ticker.ticker}.pth"
-        self.scaler:MinMaxScaler = joblib.load(f"{get_config().obj_dir}/{Predictor.NAME}_{self.ticker.ticker}_scaler.pkl")
+        self.ticker = await Ticker.findByTicker(config.get("ticker"))
+        self.features:list[str] = config.get("f_cols")
+        self.seq_length = config.get("seq_len")
+        self.artifact = config.get("artifact")
+        self.num_layers = config.get("num_layers")
+        self.hidden_size = config.get("hidden_size")
+
+        self.dict_path = f"{get_config().mdl_dir}/{gid}.pth"
+        self.scaler:MinMaxScaler = joblib.load(f"{get_config().obj_dir}/{gid}_scaler.pkl")
         self.input_size = len(self.features)
 
         self.data = await TickerTimeseries.findByTicker(self.ticker)
@@ -52,7 +44,7 @@ class Predictor(Predictable):
         artifact_index = self.features.index(self.artifact)
         dummy[0][artifact_index] = scaled_prediction[0][artifact_index].item()
         return self.scaler.inverse_transform(dummy)[0][artifact_index]
-    
+
     def get_class_name(self):
         return f"{__name__}.Predictor"
 
@@ -60,16 +52,21 @@ class Predictor(Predictable):
         with torch.no_grad():
             output:torch.Tensor = self.model(self.input_tensor)
             return output
-    
+
     def __prep_sequence__(self):
         self.df = self.df.sort_values(by="date", ascending=False)
         values = self.df[self.features].values
         scaled = self.scaler.transform(values)
         seq = scaled[:self.seq_length]
         return torch.tensor(seq, dtype=torch.float32).unsqueeze(0)
-    
+
     def __load_model__(self):
-        model = LSTMModel(input_size=self.input_size, hidden_size=self.hidden_size, num_layers=self.num_layers, output_size=self.input_size)
+        model = LSTMModel(
+            input_size=self.input_size, 
+            hidden_size=self.hidden_size, 
+            num_layers=self.num_layers, 
+            output_size=self.input_size
+        )
         model.load_state_dict(torch.load(self.dict_path))
         model.eval()
         return model
