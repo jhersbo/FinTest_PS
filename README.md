@@ -1,6 +1,6 @@
 # FinTest Prediction Service
 
-Stock market prediction platform powered by machine learning. Manages the full ML lifecycle: data ingestion, async model training, and prediction serving.
+Financial market prediction platform powered by machine learning. Manages the full ML lifecycle: data ingestion, async model training, and prediction serving.
 
 ## Stack
 
