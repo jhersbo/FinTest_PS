@@ -1,7 +1,5 @@
 import asyncio
 import os
-from datetime import datetime, timezone
-from typing import Any
 import joblib
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
@@ -22,11 +20,11 @@ L = get_logger(__name__)
 class Trainer(Trainable):
     def __init__(self):
         super().__init__()
-    
+
     def run(self, unit):
         super().run(unit)
         try:
-            asyncio.run(TimeSeriesLSTM.train(unit, self.config))
+            asyncio.run(self._train(unit))
             self.training_run.status = RunStatus.COMPLETE
         except (RuntimeError, ValueError, torch.cuda.OutOfMemoryError) as e:
             L.error(f"Training failed: {str(e)}", exc_info=True)
@@ -35,65 +33,27 @@ class Trainer(Trainable):
         finally:
             self.training_run._update()
 
-    def get_class_name(self):
-        return f"{__name__}.Trainer"
-    
-class TimeSeriesLSTM(Dataset):
-
-    NAME = "TimeSeriesLSTM"
-
-    def __init__(self, df:pd.DataFrame, ticker:str, gid_training_run:int, seq_len:int=10, feature_cols:list[str]=None, scaler:MinMaxScaler=None):
-        self.seq_len = seq_len
-        self.f_cols = feature_cols
-        self.ticker = ticker
-
-        features = df[self.f_cols].values
-
-        if not gid_training_run:
-            raise RuntimeError("Training run GID must be provided")
-
-        # Use provided scaler (for validation) or create new one (for training)
-        if scaler is not None:
-            self.scaler = scaler
-            scaled = self.scaler.transform(features)
-        else:
-            self.scaler = MinMaxScaler()
-            scaled = self.scaler.fit_transform(features)
-            joblib.dump(self.scaler, f"{get_config().obj_dir}/{gid_training_run}_scaler.pkl")
-
-        self.data = torch.tensor(scaled, dtype=torch.float32)
-
-    def __len__(self) -> int:
-        return len(self.data) - self.seq_len
-
-    def __getitem__(self, index) -> tuple[torch.Tensor, torch.Tensor]:
-        x = self.data[index:index + self.seq_len]
-        y = self.data[index + self.seq_len][:]
-        return x, y
-
-    @staticmethod
-    async def load(config:dict[str, Any]) -> pd.DataFrame:
-        ticker = await Ticker.findByTicker(config.get("ticker"))
+    async def _load(self) -> pd.DataFrame:
+        ticker = await Ticker.findByTicker(self.config.get("ticker"))
         tts = await TickerTimeseries.findByTicker(ticker=ticker)
         df = pd.DataFrame([r.__dict__ for r in tts])
         return df.sort_values(by="date", ascending=False)
 
-    @staticmethod
-    async def train(unit:JobUnit, config:dict[str, Any]) -> LSTMModel:
-        df = await TimeSeriesLSTM.load(config)
-        gid_training_run = config.get("gid_training_run")
-        ticker = config.get("ticker")
-        f_cols = config.get("f_cols")
-        epochs = config.get("epochs")
-        hidden_size = config.get("hidden_size")
-        num_layers = config.get("num_layers")
-        dropout = config.get("dropout")
-        batch_size = config.get("batch_size")
-        learning_rate = config.get("learning_rate")
-        weight_decay = config.get("weight_decay")
-        patience = config.get("patience")
-        grad_clip = config.get("grad_clip")
-        train_split = config.get("train_split")
+    async def _train(self, unit:JobUnit) -> LSTMModel:
+        df = await self._load()
+        gid_training_run = self.config.get("gid_training_run")
+        ticker = self.config.get("ticker")
+        f_cols = self.config.get("f_cols")
+        epochs = self.config.get("epochs")
+        hidden_size = self.config.get("hidden_size")
+        num_layers = self.config.get("num_layers")
+        dropout = self.config.get("dropout")
+        batch_size = self.config.get("batch_size")
+        learning_rate = self.config.get("learning_rate")
+        weight_decay = self.config.get("weight_decay")
+        patience = self.config.get("patience")
+        grad_clip = self.config.get("grad_clip")
+        train_split = self.config.get("train_split")
 
         # GPU support
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -107,17 +67,17 @@ class TimeSeriesLSTM(Dataset):
         L.info(f"Train size: {len(train_df)}, Validation size: {len(val_df)}")
 
         # Create datasets - validation reuses training scaler
+        scaler_path = f"{get_config().obj_dir}/{gid_training_run}_scaler.pkl"
         train_dataset = TimeSeriesLSTM(
-            train_df, 
-            gid_training_run=gid_training_run, 
-            ticker=ticker, 
+            train_df,
+            scaler_path=scaler_path,
+            ticker=ticker,
             feature_cols=f_cols
         )
         val_dataset = TimeSeriesLSTM(
-            val_df, 
-            gid_training_run=gid_training_run, 
-            ticker=ticker, 
-            feature_cols=f_cols, 
+            val_df,
+            ticker=ticker,
+            feature_cols=f_cols,
             scaler=train_dataset.scaler
         )
 
@@ -248,3 +208,37 @@ class TimeSeriesLSTM(Dataset):
         L.info(f"Training complete! Best Val Loss: {best_val_loss:.6f} at epoch {best_epoch+1}")
 
         return model
+
+    def get_class_name(self):
+        return f"{__name__}.Trainer"
+
+class TimeSeriesLSTM(Dataset):
+
+    NAME = "TimeSeriesLSTM"
+
+    def __init__(self, df:pd.DataFrame, ticker:str, seq_len:int=10, feature_cols:list[str]=None, scaler:MinMaxScaler=None, scaler_path:str=None):
+        self.seq_len = seq_len
+        self.f_cols = feature_cols
+        self.ticker = ticker
+
+        features = df[self.f_cols].values
+
+        # Use provided scaler (for validation) or create new one (for training)
+        if scaler is not None:
+            self.scaler = scaler
+            scaled = self.scaler.transform(features)
+        else:
+            self.scaler = MinMaxScaler()
+            scaled = self.scaler.fit_transform(features)
+            if scaler_path:
+                joblib.dump(self.scaler, scaler_path)
+
+        self.data = torch.tensor(scaled, dtype=torch.float32)
+
+    def __len__(self) -> int:
+        return len(self.data) - self.seq_len
+
+    def __getitem__(self, index) -> tuple[torch.Tensor, torch.Tensor]:
+        x = self.data[index:index + self.seq_len]
+        y = self.data[index + self.seq_len][:]
+        return x, y
