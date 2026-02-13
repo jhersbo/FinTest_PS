@@ -117,7 +117,7 @@ API Request → JobQueue → RQ Worker → Trainer.run()
 **General Conventions**:
 - Double-quotes take priority
 - Type definitions syntax: `obj:Type` not `obj: Type`
-- Response bodies generally follow this convention -> {"result":"Ok", "subject":{}}
+- Response bodies generally follow this convention -> `{"result":"Ok", "subject":{}}`
 
 **Class Patterns**:
 - PascalCase for classes: `TimeSeriesLSTM`, `JobUnit`
