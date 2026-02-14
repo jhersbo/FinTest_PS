@@ -66,6 +66,8 @@ venv.bak/
 *.swp
 *.swo
 *~
+CLAUDE.md
+.mcp.json
 
 # OS
 .DS_Store
