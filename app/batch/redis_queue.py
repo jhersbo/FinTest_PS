@@ -4,6 +4,7 @@ from rq.job import Job as rqJob
 
 from app.batch.models.job_unit import JobUnit
 from app.core.config.config import get_config
+from app.core.db.session import transaction
 from app.core.utils.logger import get_logger
 
 from .job import Job
@@ -23,13 +24,13 @@ class RedisQueue:
         self.Q:Queue = queue
 
     async def put(self, job:Job) -> rqJob:
-        unit = await JobUnit.create()
-        _job = self.Q.enqueue(job.run, args=(unit,), job_timeout=RedisQueue.DEFAULT_TIMEOUT, on_success=end, on_failure=fail)
-        _job.meta["gid_job_unit"] = unit.gid
-        _job.save()
-        unit.rq_token = _job.id
-        await unit.update()
-        return _job
+        async with transaction():
+            unit = await JobUnit.create()
+            _job = self.Q.enqueue(job.run, args=(unit,), job_timeout=RedisQueue.DEFAULT_TIMEOUT, on_success=end, on_failure=fail, meta={"gid_job_unit": unit.gid})
+            unit.rq_token = _job.id
+            await unit.update()
+            return _job
+        return None
 
     @staticmethod
     def get_queue(name) -> "RedisQueue":

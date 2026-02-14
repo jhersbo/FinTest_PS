@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.batch.models.job_unit import JobUnit
 from app.ml.core.models.model_type import ModelType
 
-from ....core.db.session import get_session, get_sync_session
+from ....core.db.session import get_session, get_sync_session, current_session, transaction
 from ....core.models.entity import FindableEntity
 from ....core.models.globalid import GlobalId
 
@@ -45,13 +45,11 @@ class TrainingRun(FindableEntity):
     async def create(model:ModelType, unit:JobUnit=None, data:dict[str, Any]={}) -> "TrainingRun":
         if not model:
             raise RuntimeError("No model given")
-        
+
         now = datetime.now(timezone.utc)
+        T = TrainingRun()
 
-        session = await get_session()
-        try:
-            T = TrainingRun()
-
+        async with transaction() as session:
             gid = await GlobalId.allocate(T)
             T.gid = gid.gid
             T.gid_model_type = model.gid
@@ -59,20 +57,14 @@ class TrainingRun(FindableEntity):
             T.data = data
             T.status = RunStatus.PENDING
             T.created = now
-
-            async with session.begin():
-                session.add(T)
+            session.add(T)
+            await session.flush()
             return T
-        finally:
-            await session.close()
 
     async def update(self) -> None:
-        session = await get_session()
-        try:
-            async with session.begin():
-                session.add(self)
-        finally:
-            await session.close()
+        async with transaction() as session:
+            session.add(self)
+            await session.flush()
 
     def _update(self) -> None:
         session = get_sync_session()
@@ -84,19 +76,13 @@ class TrainingRun(FindableEntity):
 
     @staticmethod
     async def find_by_id(gid:int) -> "TrainingRun":
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(TrainingRun).where(TrainingRun.gid==gid)
             return await session.scalar(statement=stmt)
-        finally:
-            await session.close()
-    
+
     @staticmethod
     async def find_by_model(gid_model_type:int) -> list["TrainingRun"]:
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(TrainingRun).where(TrainingRun.gid_model_type==gid_model_type)
             tups = await session.execute(statement=stmt)
             return [t[0] for t in tups]
-        finally:
-            await session.close()

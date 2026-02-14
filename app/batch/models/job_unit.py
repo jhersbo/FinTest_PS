@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import BOOLEAN, TIMESTAMP, select, String, BIGINT
 
-from app.core.db.session import get_session, get_sync_session
+from app.core.db.session import get_sync_session,transaction
 from app.core.models.entity import FindableEntity, Entity
 from app.core.models.globalid import GlobalId
 
@@ -161,12 +161,9 @@ class JobUnit(FindableEntity):
 
     @staticmethod
     async def find_by_gid(gid:int) -> "JobUnit":
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(JobUnit).where(JobUnit.gid==gid)
-            return session.scalar(statement=stmt)
-        finally:
-            await session.close()
+            return await session.scalar(statement=stmt)
 
     @staticmethod
     def _find_by_gid(gid:int) -> "JobUnit":
@@ -179,12 +176,9 @@ class JobUnit(FindableEntity):
 
     @staticmethod
     async def find_by_rqtoken(rq_token:int) -> "JobUnit":
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(JobUnit).where(JobUnit.rq_token==rq_token)
-            return session.scalar(statement=stmt)
-        finally:
-            await session.close()
+            return await session.scalar(statement=stmt)
 
     def start_job(self) -> bool:
         self.start = datetime.now(timezone.utc)
@@ -263,10 +257,9 @@ class JobUnit(FindableEntity):
     @staticmethod
     async def create() -> "JobUnit":
         now = datetime.now(timezone.utc)
-        session = await get_session()
-        try:
-            J = JobUnit()
+        J = JobUnit()
 
+        async with transaction() as session:
             gid = await GlobalId.allocate(J)
             J.gid = gid.gid
             J.rq_token = None
@@ -275,24 +268,12 @@ class JobUnit(FindableEntity):
             J.created = now
             J.start = None
             J.end = None
-
-            async with session.begin():
-                session.add(J)
+            session.add(J)
+            await session.flush()
             return J
-        except:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
 
     async def update(self) -> bool:
-        session = await get_session()
-        try:
-            async with session.begin():
-                session.add(self)
+        async with transaction() as session:
+            session.add(self)
+            await session.flush()
             return True
-        except:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()

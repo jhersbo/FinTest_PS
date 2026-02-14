@@ -1,6 +1,10 @@
 import torch
 
+from app.ml.core.models.training_run import TrainingRun
+
 class Predictable():
+    training_run:TrainingRun
+
     def configure(self, config:dict) -> None:
         self.config = {k: v for k, v in config.items() if v is not None}
     def predict(self) -> float: ...

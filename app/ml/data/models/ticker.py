@@ -6,7 +6,7 @@ from sqlalchemy import String, TIMESTAMP, BOOLEAN, select
 from app.core.db.entity_finder import EntityFinder
 
 from ....core.models.globalid import GlobalId
-from ....core.db.session import get_session
+from ....core.db.session import transaction
 from ....core.models.entity import FindableEntity
 
 class Ticker(FindableEntity):
@@ -54,45 +54,34 @@ class Ticker(FindableEntity):
         """
         Finds Ticker object by ticker value
         """
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(Ticker).where(Ticker.ticker == ticker)
             return await session.scalar(statement=stmt)
-        finally:
-            await session.close()
 
     @staticmethod
     async def findAll() -> list["Ticker"]:
         """
         Finds all tickers
         """
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(Ticker)
             tups = await session.execute(statement=stmt)
             return [t[0] for t in tups]
-        finally:
-            await session.close()
 
     @staticmethod
     async def findAllByMarket(market:str) -> list["Ticker"]:
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(Ticker).where(Ticker.market == market)
             tups = await session.execute(statement=stmt)
             return [t[0] for t in tups]
-        finally:
-            await session.close()
 
     @staticmethod
     async def create(ticker:str, name:str, primary_exchange:str, currency:str, type:str, market:str, active:bool=True) -> "Ticker":
         ts = datetime.now(timezone.utc)
-        session = await get_session()
-        try:
+        T = Ticker()
 
-            T = Ticker()
+        async with transaction() as session:
             gid = await GlobalId.allocate(T)
-
             T.gid = gid.gid
             T.ticker = ticker
             T.name = name
@@ -103,22 +92,17 @@ class Ticker(FindableEntity):
             T.active = active
             T.last_audit = ts
             T.created = ts
-
-            async with session.begin():
-                session.add(T)
+            session.add(T)
+            await session.flush()
             return T
-        finally:
-            await session.close()
 
     @staticmethod
     async def batch_create(tickers:list["Ticker"]) -> int:
         return await EntityFinder.batch_create(tickers)
-    
+
     async def update(self) -> None:
-        session = await get_session()
-        try:
-            async with session.begin():
-                session.add(self)
-        finally:
-            await session.close()
+        async with transaction() as session:
+            session.add(self)
+            await session.flush()
+            return
         

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from rq.exceptions import NoSuchJobError
 
 from app.batch.models.job_unit import JobUnit
+from app.core.db.session import transaction
 from app.core.utils.logger import get_logger
 from app.ml.prediction.ts_lstm import Predictor as TSLSTM_Predictor
 from app.ml.training.ts_lstm import Trainer as TSLSTM_Trainer
@@ -15,8 +16,6 @@ from ..utils.security import auth
 from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.core.models.model_type import ModelType
-from ...ml.training.simple_price_lstm import Trainer as SPLSTM_Trainer
-from app.ml.prediction.simple_price_lstm import Predictor as SPLSTM_Predictor
 from ...ml.data.batch.seeders import SeedDailyAgg, SeedTickers, SeedSMA
 from ...batch.redis_queue import RedisQueue
 
@@ -124,7 +123,7 @@ async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
         {
             "result": "Ok",
             "subject": {
-                "job_unit": job_unit.gid,
+                # "job_unit": job_unit.gid,
                 "job_id": f"{job.id}",
                 "job_status": f"{job.get_status()}"
             }
@@ -135,6 +134,7 @@ async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
 
 class SeedSMAPayload(BaseModel):
     ticker:str=None
+    market:str=None
     timespan:str=None
     window:int=None
     series_type:str=None
@@ -145,6 +145,7 @@ class SeedSMAPayload(BaseModel):
 async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
     config = {
         "ticker": payload.ticker,
+        "market": payload.market,
         "timespan": payload.timespan,
         "window": payload.window,
         "series_type": payload.series_type,
@@ -154,7 +155,7 @@ async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
     _job = SeedSMA()
     _job.configure(config)
 
-    Q = RedisQueue.get_queue("long")
+    Q = RedisQueue.get_queue("short")
     job = await Q.put(_job)
 
     return JSONResponse(
@@ -175,37 +176,44 @@ async def post_seedModels() -> JSONResponse:
 
     models:list[ModelType] = [
         ModelType(
-            model_name="SimplePriceLSTM",
-            config={},
-            is_available=True,
-            trainer_name=SPLSTM_Trainer().get_class_name(),
-            predictor_name=SPLSTM_Predictor().get_class_name()
-        ),
-        ModelType(
             model_name="TimeSeriesLSTM",
-            config={},
             is_available=True,
             trainer_name=TSLSTM_Trainer().get_class_name(),
-            predictor_name=TSLSTM_Predictor().get_class_name()
+            predictor_name=TSLSTM_Predictor().get_class_name(),
+            default_config={
+                "ticker": "",
+                "f_cols": [],
+                "epochs":100,
+                "hidden_size":64,
+                "num_layers":2,
+                "dropout":0.2,
+                "batch_size":64,
+                "learning_rate":0.001,
+                "weight_decay":1e-5,
+                "patience":15,
+                "grad_clip":1.0,
+                "train_split":0.8
+            }
         )
     ]
 
     created = 0
     updated = 0
 
-    for m in models:
-        found = await ModelType.find_by_name(m.model_name)
-        if not found:
-            await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.config, m.is_available)
-            created += 1
-        else:
-            if not m.equals(found):
-                found.config = m.config
-                found.is_available = m.is_available
-                found.trainer_name = m.trainer_name
-                found.predictor_name = m.predictor_name
-                await found.update()
-                updated += 1
+    async with transaction():
+        for m in models:
+            found = await ModelType.find_by_name(m.model_name)
+            if not found:
+                await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.default_config, m.is_available)
+                created += 1
+            else:
+                if not m.equals(found):
+                    found.default_config = m.default_config
+                    found.is_available = m.is_available
+                    found.trainer_name = m.trainer_name
+                    found.predictor_name = m.predictor_name
+                    await found.update()
+                    updated += 1
     
     return JSONResponse(
         {

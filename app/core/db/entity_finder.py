@@ -2,7 +2,7 @@ import importlib
 
 from sqlalchemy.orm import DeclarativeBase
 
-from app.core.db.session import get_session
+from app.core.db.session import current_session, transaction
 
 from ..models.entity import FindableEntity
 from ..models.globalid import GlobalId
@@ -43,39 +43,27 @@ class EntityFinder:
     @staticmethod
     async def batch_create(objects:list[DeclarativeBase]) -> int:
         created = 0
-        session = await get_session()
-        try:
-            async with session.begin():
-                payload = []
-                for i, obj in enumerate(objects):
-                    if isinstance(obj, FindableEntity):
-                        gid = await GlobalId.allocate(obj)
-                        obj.gid = gid.gid
-                    created += 1
-                    payload.append(obj)
-                    if(i % BATCH_CHUNK_SIZE == 0 or i == len(objects) - 1):
-                        session.add_all(payload)
-                        payload = []
-            return created
-        except:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+        async with transaction() as _session:
+            payload = []
+            for i, obj in enumerate(objects):
+                if isinstance(obj, FindableEntity):
+                    gid = await GlobalId.allocate(obj)
+                    obj.gid = gid.gid
+                created += 1
+                payload.append(obj)
+                if i % BATCH_CHUNK_SIZE == 0 or i == len(objects) - 1:
+                    _session.add_all(payload)
+                    await _session.flush()
+                    payload = []
+        return created
 
     @staticmethod
     async def batch_update(objects:list[DeclarativeBase]) -> None:
-        session = await get_session()
-        try:
-            async with session.begin():
-                payload = []
-                for i, obj in enumerate(objects):
-                    payload.append(obj)
-                    if(i % BATCH_CHUNK_SIZE == 0 or i == len(objects) - 1):
-                        session.add_all(payload)
-                        payload = []
-        except:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+        async with transaction() as _session:
+            payload = []
+            for i, obj in enumerate(objects):
+                payload.append(obj)
+                if i % BATCH_CHUNK_SIZE == 0 or i == len(objects) - 1:
+                    _session.add_all(payload)
+                    await _session.flush()
+                    payload = []

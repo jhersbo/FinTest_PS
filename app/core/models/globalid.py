@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import BIGINT, TIMESTAMP, BOOLEAN, String, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..db.session import get_session
+from ..db.session import transaction
 from ..models.entity import Entity
 from ..models.entity import FindableEntity
 
@@ -35,28 +35,21 @@ class GlobalId(Entity):
 
     @staticmethod
     async def find_by_gid(gid:int) -> "GlobalId":
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(GlobalId).where(GlobalId.gid==gid)
             return await session.scalar(statement=stmt)
-        finally:
-            await session.close()
 
     @staticmethod
     async def allocate(entity:FindableEntity) -> "GlobalId":
         now = datetime.now(timezone.utc)
-
-        session = await get_session()
-        try:
-            G = GlobalId(
-                claimed=True,
-                table_name=entity.__tablename__,
-                created=now,
-                class_name=entity.get_name()
-            )
-            async with session.begin():
-                session.add(G)
+        G = GlobalId(
+            claimed=True,
+            table_name=entity.__tablename__,
+            created=now,
+            class_name=entity.get_name()
+        )
+        async with transaction() as session:
+            session.add(G)
+            await session.flush()
             return G
-        finally:
-            await session.close()
 

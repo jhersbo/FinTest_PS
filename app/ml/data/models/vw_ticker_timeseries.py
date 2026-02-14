@@ -1,4 +1,4 @@
-from app.core.db.session import get_session
+from app.core.db.session import transaction
 from app.core.models.entity import View
 
 from sqlalchemy.orm import Mapped, mapped_column
@@ -63,12 +63,9 @@ class TickerTimeseries(View):
         ticker:Ticker,
         **kwargs
     ) -> list["TickerTimeseries"]:
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(TickerTimeseries).where(
                 TickerTimeseries.ticker_gid==ticker.gid
             ).order_by(TickerTimeseries.date)
             tups = await session.execute(statement=stmt)
             return [t[0] for t in tups]
-        finally:
-            await session.close()

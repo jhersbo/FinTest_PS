@@ -27,7 +27,7 @@ def auth(fn):
     ) ->  JSONResponse:
         # AUTHENTICATE API TOKEN
         req = get_request()
-        x_api_key = req.headers.get("x-api-key")
+        x_api_key = req.headers.get("x-fintestps-key")
         if not x_api_key:
             raise BadTokenException()
         
