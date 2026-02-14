@@ -2,6 +2,7 @@ venv/
 .env
 dummy/
 artifacts/
+data_files/
 __postgresql_data__/
 
 # Python
