@@ -79,6 +79,12 @@ FinTest_PS/
 - Custom `BaseModel` with SQLAlchemy for CRUD operations
 - Async queries with `await Model.find_by_gid()` pattern
 - Views for complex queries (e.g., `vw_ticker_timeseries`)
+- ContextVar-based transaction management via `transaction()` context manager (see `app/core/db/session.py`)
+  - Re-entrant: nested `transaction()` calls yield the existing session — outermost caller owns the lifecycle
+  - Auto-commits on clean exit, auto-rolls back on exception
+  - `commit_session()` / `rollback_session()` for manual mid-block control; after either call a new implicit transaction begins automatically
+  - Write methods use `flush()` (not `commit()`) to stay within the transaction boundary
+  - RQ workers use separate sync sessions (`get_sync_session()`) — not ContextVar-managed
 
 **4. Training Pipeline** (see [planning/lstm-training-quick-reference.md](planning/lstm-training-quick-reference.md))
 - Train/validation split (temporal, no shuffling)
