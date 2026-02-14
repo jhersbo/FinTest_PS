@@ -4,6 +4,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.core.db.session import transaction
 from app.core.utils.logger import get_logger
 from app.ml.core.models.training_run import TrainingRun
 from app.ml.model_defs.model_facade import ModelFacade
@@ -32,16 +33,18 @@ class TickerTrainPayload(BaseModel):
 async def post_ticker(payload:TickerTrainPayload) -> JSONResponse:
     model = await ModelType.find_by_name(payload.model_name)
     trainer = ModelFacade.trainer_for(model)
-    training_run = await TrainingRun.create(model=model)
-    config = ModelFacade.build_config(training_run.gid, payload.config, model.default_config)
-    training_run.data = config
-    await training_run.update()
-    
-    trainer.configure(config)
-    trainer.training_run = training_run
 
-    Q = RedisQueue.get_queue("long")
-    job = await Q.put(trainer)
+    async with transaction():
+        training_run = await TrainingRun.create(model=model)
+        config = ModelFacade.build_config(training_run.gid, payload.config, model.default_config)
+        training_run.data = config
+        await training_run.update()
+        
+        trainer.configure(config)
+        trainer.training_run = training_run
+
+        Q = RedisQueue.get_queue("long")
+        job = await Q.put(trainer)
 
     return JSONResponse(
         {

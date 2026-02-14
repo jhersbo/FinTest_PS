@@ -4,7 +4,7 @@ from sqlalchemy import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import TIMESTAMP, DATE, DOUBLE_PRECISION, INTEGER, BIGINT, select
 
-from app.core.db.session import get_session
+from app.core.db.session import transaction
 from app.core.models.entity import Entity
 from app.ml.data.models.ticker import Ticker
 
@@ -62,47 +62,35 @@ class DailyAgg(Entity):
         timestamp:int
     ) -> "DailyAgg":
         dt = datetime.fromtimestamp((timestamp if timestamp else datetime.fromordinal(date.toordinal()).timestamp()), tz=timezone.utc)
-        session = await get_session()
-        try:
-            D = DailyAgg()
-            D.gid_ticker = ticker.gid
-            D.opn = opn
-            D.cls = cls
-            D.high = high
-            D.low = low
-            D.vol = vol
-            D.date = date
-            D.timestamp = dt
+        D = DailyAgg()
+        D.gid_ticker = ticker.gid
+        D.opn = opn
+        D.cls = cls
+        D.high = high
+        D.low = low
+        D.vol = vol
+        D.date = date
+        D.timestamp = dt
 
-            async with session.begin():
-                session.add(D)
+        async with transaction() as session:
+            session.add(D)
+            await session.flush()
             return D
-        except:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
 
     @staticmethod
     async def find_by_ticker_date(ticker:Ticker, date:_date) -> "DailyAgg":
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(DailyAgg).where(
                 DailyAgg.gid_ticker==ticker.gid,
                 DailyAgg.date==date
             )
             return await session.scalar(statement=stmt)
-        finally:
-            await session.close()
-    
+
     @staticmethod
     async def find_by_ticker(ticker:Ticker) -> list["DailyAgg"]:
-        session = await get_session()
-        try:
+        async with transaction() as session:
             stmt = select(DailyAgg).where(
                 DailyAgg.gid_ticker==ticker.gid
             )
             tups = await session.execute(statement=stmt)
             return [t[0] for t in tups]
-        finally:
-            await session.close()
