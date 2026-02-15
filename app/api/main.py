@@ -7,14 +7,11 @@ from app.api.routers.users import router as users_router
 from app.api.routers.admin import router as admin_router
 from .routers.train import router as train_router
 from .routers.predict import router as predict_router
+from .routers.rate_limit import router as rl_router
 from app.core.utils.logger import get_logger
 from app.api.utils.responses import WrappedException
 from app.api.middleware.request_capture import RequestCapture
 from app.api.middleware.rate_limiter import RateLimiter
-
-# TEST DEPS
-
-###########
 
 L = get_logger(__name__)
 
@@ -23,17 +20,27 @@ app = FastAPI(
     version="v0.0.0.2"
 )
 
+routers = [
+    users_router,
+    details_router,
+    train_router,
+    predict_router,
+    rl_router,
+    admin_router
+]
+
 # ROUTERS
-app.include_router(users_router)
-app.include_router(details_router)
-app.include_router(admin_router)
-app.include_router(train_router)
-app.include_router(predict_router)
+for r in routers:
+    app.include_router(r)
 # END ROUTERS
 
 # MIDDLEWARE
-app.add_middleware(RequestCapture)
-app.add_middleware(RateLimiter)
+middleware = [
+    RequestCapture,
+    RateLimiter
+]
+for m in middleware:
+    app.add_middleware(m)
 # END MIDDLEWARE
 
 @app.exception_handler(WrappedException)
@@ -64,24 +71,5 @@ def root():
         {
             "result": "Ok",
             "subject": "Hello ✌🏻"
-        }
-    )
-
-@app.get("/test")
-async def test():
-
-    from ..ml.data.clients.av_client import AVClient
-    from ..ml.data.clients.polygon_client import PolygonClient
-
-    # A = AVClient()
-    # df = await A.time_series_daily("AAPL")
-
-    P = PolygonClient()
-    df = await P.getDetails("AAPL")
-
-    return JSONResponse(
-        {
-            "result": "Ok",
-            "subject": ""
         }
     )
