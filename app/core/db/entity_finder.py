@@ -2,7 +2,7 @@ import importlib
 
 from sqlalchemy.orm import DeclarativeBase
 
-from app.core.db.session import current_session, transaction
+from app.core.db.session import transaction
 
 from ..models.entity import FindableEntity
 from ..models.globalid import GlobalId

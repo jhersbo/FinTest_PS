@@ -29,9 +29,6 @@ class Job:
     
     def configure(self, config:dict) -> None:
         self.config = {k: v for k, v in config.items() if v is not None}
-
-    def get_class_name(self) -> str:
-        raise NotImplementedError("Child must implement this method")
     
     @staticmethod
     def now() -> datetime:
