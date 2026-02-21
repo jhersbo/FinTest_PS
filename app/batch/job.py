@@ -1,3 +1,4 @@
+
 from datetime import datetime, timezone
 from typing import Any
 from app.batch.models.job_unit import JobUnit
@@ -29,9 +30,6 @@ class Job:
     
     def configure(self, config:dict) -> None:
         self.config = {k: v for k, v in config.items() if v is not None}
-
-    def get_class_name(self) -> str:
-        raise NotImplementedError("Child must implement this method")
     
     @staticmethod
     def now() -> datetime:
@@ -41,3 +39,7 @@ class Job:
         :rtype: datetime
         """
         return datetime.now(timezone.utc)
+    
+    @classmethod
+    def get_class_name(cls) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"

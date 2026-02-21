@@ -45,9 +45,6 @@ class Predictor(Predictable):
         dummy[0][artifact_index] = scaled_prediction[0][artifact_index].item()
         return self.scaler.inverse_transform(dummy)[0][artifact_index]
 
-    def get_class_name(self):
-        return f"{__name__}.Predictor"
-
     def __predict_next__(self):
         with torch.no_grad():
             output:torch.Tensor = self.model(self.input_tensor)

@@ -1,4 +1,3 @@
-import asyncio
 from app.batch.job import Job
 from app.batch.models.job_unit import JobUnit
 from app.ml.core.models.model_type import ModelType
@@ -23,10 +22,3 @@ class Trainable(Job):
         self.training_run.gid_job_unit = unit.gid
         self.training_run.status = RunStatus.RUNNING
         self.training_run._update()
-
-
-    async def create_run(self, unit:JobUnit) -> TrainingRun:
-        gid_model_type = self.config.get("gid_model_type")
-        model = await ModelType.find_by_gid(gid_model_type)
-        t_run = await TrainingRun.create(model, unit, self.config)
-        self.training_run = t_run
