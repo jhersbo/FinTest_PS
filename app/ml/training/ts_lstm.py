@@ -209,9 +209,6 @@ class Trainer(Trainable):
 
         return model
 
-    def get_class_name(self):
-        return f"{__name__}.Trainer"
-
 class TimeSeriesLSTM(Dataset):
 
     NAME = "TimeSeriesLSTM"

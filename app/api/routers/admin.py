@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from rq.exceptions import NoSuchJobError
 
+from app.batch.models.job_def import JobDef
 from app.batch.models.job_unit import JobUnit
 from app.core.db.session import transaction
 from app.core.utils.logger import get_logger
@@ -17,6 +18,7 @@ from ...ml.data.clients.av_client import AVClient
 from ...ml.data.clients.polygon_client import PolygonClient
 from ...ml.core.models.model_type import ModelType
 from ...ml.data.batch.seeders import SeedDailyAgg, SeedTickers, SeedSMA
+from ...ml.data.batch.file_seeders import FileSeedTickers, FileSeedDailyAgg
 from ...batch.redis_queue import RedisQueue
 
 # SETUP #
@@ -131,7 +133,6 @@ async def post_seedDailyAgg(payload:SeedDailyAggPayload) -> JSONResponse:
         status_code=status.HTTP_202_ACCEPTED
     )
 
-
 class SeedSMAPayload(BaseModel):
     ticker:str=None
     market:str=None
@@ -169,6 +170,170 @@ async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
         status_code=status.HTTP_202_ACCEPTED
     )
 
+class FileSeedPayload(BaseModel):
+    exchange:str = None
+    asset_type:str = None
+    ticker:str = None
+    file_type:str = None
+
+@router.post("/seed/file/tickers")
+@auth
+async def post_fileSeedTickers(payload:FileSeedPayload) -> JSONResponse:
+    config = {
+        "exchange": payload.exchange,
+        "asset_type": payload.asset_type,
+        "ticker": payload.ticker,
+        "file_type": payload.file_type
+    }
+    _job = FileSeedTickers()
+    _job.configure(config)
+
+    Q = RedisQueue.get_queue("long")
+    job = await Q.put(_job)
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "job_id": f"{job.id}",
+                "job_status": f"{job.get_status()}"
+            }
+        },
+        status_code=status.HTTP_202_ACCEPTED
+    )
+
+@router.post("/seed/file/daily_agg")
+@auth
+async def post_fileSeedDailyAgg(payload:FileSeedPayload) -> JSONResponse:
+    config = {
+        "exchange": payload.exchange,
+        "asset_type": payload.asset_type,
+        "ticker": payload.ticker,
+        "file_type": payload.file_type
+    }
+    _job = FileSeedDailyAgg()
+    _job.configure(config)
+
+    Q = RedisQueue.get_queue("long")
+    job = await Q.put(_job)
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "job_id": f"{job.id}",
+                "job_status": f"{job.get_status()}"
+            }
+        },
+        status_code=status.HTTP_202_ACCEPTED
+    )
+
+@router.post("/seed/jobs")
+@auth
+async def post_seedJobs() -> JSONResponse:
+    jobs:list[JobDef] = [
+        JobDef(
+            display_name="Train TimeSeries LSTM (default)",
+            job_class=TSLSTM_Trainer.get_class_name(),
+            default_config={
+                "ticker": None,
+                "f_cols": [],
+                "epochs": 100,
+                "hidden_size": 64,
+                "num_layers": 2,
+                "dropout": 0.2,
+                "batch_size": 64,
+                "learning_rate": 0.001,
+                "weight_decay": 1e-5,
+                "patience": 15,
+                "grad_clip": 1.0,
+                "train_split": 0.8
+            },
+            enabled=True
+        ),
+        JobDef(
+            display_name="Seed Tickers",
+            job_class=SeedTickers.get_class_name(),
+            default_config={
+                "market": None
+            },
+            enabled=True
+        ),
+        JobDef(
+            display_name="Seed Daily Aggregates",
+            job_class=SeedDailyAgg.get_class_name(),
+            default_config={
+                "ticker": None,
+                "market": None,
+                "start": None,
+                "end": None,
+                "retries": 3
+            },
+            enabled=True
+        ),
+        JobDef(
+            display_name="Seed SMA",
+            job_class=SeedSMA.get_class_name(),
+            default_config={
+                "ticker": "all",
+                "market": None,
+                "timespan": "day",
+                "window": 50,
+                "series_type": "close",
+                "limit": 5000
+            },
+            enabled=True
+        ),
+        JobDef(
+            display_name="File Seed Tickers",
+            job_class=FileSeedTickers.get_class_name(),
+            default_config={
+                "exchange": None,
+                "asset_type": None,
+                "ticker": None,
+                "file_type": "txt"
+            },
+            enabled=True
+        ),
+        JobDef(
+            display_name="File Seed Daily Aggregates",
+            job_class=FileSeedDailyAgg.get_class_name(),
+            default_config={
+                "exchange": None,
+                "asset_type": None,
+                "ticker": None,
+                "file_type": "txt"
+            },
+            enabled=True
+        ),
+    ]
+
+    created = 0
+    updated = 0
+
+    async with transaction():
+        for j in jobs:
+            found = await JobDef.find_by_display_name(j.display_name)
+            if not found:
+                await JobDef.create(j.display_name, j.job_class, j.default_config, j.enabled)
+                created += 1
+            else:
+                if not j.equals(found):
+                    found.default_config = j.default_config
+                    found.enabled = j.enabled
+                    await found.update()
+                    updated += 1
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "created": created,
+                "updated": updated
+            }
+        },
+        status_code=status.HTTP_201_CREATED
+    )
 
 @router.post("/seed/models")
 @auth
@@ -178,8 +343,8 @@ async def post_seedModels() -> JSONResponse:
         ModelType(
             model_name="TimeSeriesLSTM",
             is_available=True,
-            trainer_name=TSLSTM_Trainer().get_class_name(),
-            predictor_name=TSLSTM_Predictor().get_class_name(),
+            trainer_name=TSLSTM_Trainer.get_class_name(),
+            predictor_name=TSLSTM_Predictor.get_class_name(),
             default_config={
                 "ticker": "",
                 "f_cols": [],

@@ -134,6 +134,10 @@ class JobUnit(FindableEntity):
     __tablename__ = "job_unit"
     __name__ = f"{__name__}.JobUnit"
 
+    gid_job_def:Mapped[BIGINT] = mapped_column(
+        BIGINT,
+        nullable=False
+    )
     rq_token:Mapped[String] = mapped_column(
         String
     )
@@ -255,13 +259,14 @@ class JobUnit(FindableEntity):
         self._stats[key] = J
 
     @staticmethod
-    async def create() -> "JobUnit":
+    async def create(gid_job_def:int) -> "JobUnit":
         now = datetime.now(timezone.utc)
         J = JobUnit()
 
         async with transaction() as session:
             gid = await GlobalId.allocate(J)
             J.gid = gid.gid
+            J.gid_job_def = gid_job_def
             J.rq_token = None
             J.failed = False
             J.ack = None

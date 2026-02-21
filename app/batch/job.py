@@ -1,3 +1,4 @@
+
 from datetime import datetime, timezone
 from typing import Any
 from app.batch.models.job_unit import JobUnit
@@ -38,3 +39,7 @@ class Job:
         :rtype: datetime
         """
         return datetime.now(timezone.utc)
+    
+    @classmethod
+    def get_class_name(cls) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"

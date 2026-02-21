@@ -1,10 +1,9 @@
-from abc import ABC, abstractmethod
 from app.batch.job import Job
 from app.batch.models.job_unit import JobUnit
 from app.ml.core.models.model_type import ModelType
 from app.ml.core.models.training_run import RunStatus, TrainingRun
 
-class Trainable(ABC, Job):
+class Trainable(Job):
     """
     This is the base class for all model trainers. Trainers will implement this class
     which will contain helpful methods for training.
@@ -23,6 +22,3 @@ class Trainable(ABC, Job):
         self.training_run.gid_job_unit = unit.gid
         self.training_run.status = RunStatus.RUNNING
         self.training_run._update()
-    
-    @abstractmethod
-    def get_class_name() -> str:...
