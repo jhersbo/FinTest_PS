@@ -1,3 +1,5 @@
+from typing import Any
+
 from app.batch.job import Job
 from app.batch.models.job_unit import JobUnit
 from app.ml.core.models.model_type import ModelType
@@ -22,3 +24,15 @@ class Trainable(Job):
         self.training_run.gid_job_unit = unit.gid
         self.training_run.status = RunStatus.RUNNING
         self.training_run._update()
+
+    def configure(self, gid_training_run, override:dict[str, Any]={}):
+        super().configure(override)
+        bad_vals = [
+            "",
+            [],
+            None
+        ]
+        self.config["gid_training_run"] = gid_training_run
+        for k in override.keys():
+            if override[k] not in bad_vals:
+                self.config[k] = override[k]
