@@ -35,7 +35,7 @@ AV = AVClient()
 #      ROUTES      #
 ####################
 
-@router.get("/job/{rq_token}")
+@router.get("/job")
 @auth
 async def get_job(rq_token:str) -> JSONResponse:
     job = None
@@ -185,6 +185,33 @@ async def post_seedSMA(payload:SeedSMAPayload) -> JSONResponse:
         status_code=status.HTTP_202_ACCEPTED
     )
 
+class RunJobPayload(BaseModel):
+    gid_job_def:int
+    config:dict={}
+
+@router.post("/job/run")
+@auth
+async def post_runJob(payload:RunJobPayload) -> JSONResponse:
+    async with transaction():
+        job_def = await JobDef.find_by_gid(payload.gid_job_def)
+        _job = job_def.get_instance()
+        if payload.config:
+            _job.configure(payload.config)
+
+        Q = RedisQueue.get_queue("long")
+        job = await Q.put(_job)
+
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "job_id": f"{job.id}",
+                "job_status": f"{job.get_status()}"
+            }
+        },
+        status_code=status.HTTP_202_ACCEPTED
+    )
+
 class FileSeedPayload(BaseModel):
     exchange:str = None
     asset_type:str = None
@@ -252,6 +279,7 @@ async def post_seedJobs() -> JSONResponse:
             job_class=TSLSTM_Trainer.get_class_name(),
             default_config={
                 "ticker": None,
+                "model_type": "TimeSeriesLSTM",
                 "f_cols": [],
                 "epochs": 100,
                 "hidden_size": 64,
@@ -359,21 +387,7 @@ async def post_seedModels() -> JSONResponse:
             model_name="TimeSeriesLSTM",
             is_available=True,
             trainer_name=TSLSTM_Trainer.get_class_name(),
-            predictor_name=TSLSTM_Predictor.get_class_name(),
-            default_config={
-                "ticker": "",
-                "f_cols": [],
-                "epochs":100,
-                "hidden_size":64,
-                "num_layers":2,
-                "dropout":0.2,
-                "batch_size":64,
-                "learning_rate":0.001,
-                "weight_decay":1e-5,
-                "patience":15,
-                "grad_clip":1.0,
-                "train_split":0.8
-            }
+            predictor_name=TSLSTM_Predictor.get_class_name()
         )
     ]
 
@@ -384,11 +398,10 @@ async def post_seedModels() -> JSONResponse:
         for m in models:
             found = await ModelType.find_by_name(m.model_name)
             if not found:
-                await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.default_config, m.is_available)
+                await ModelType.create(m.model_name, m.trainer_name, m.predictor_name, m.is_available)
                 created += 1
             else:
                 if not m.equals(found):
-                    found.default_config = m.default_config
                     found.is_available = m.is_available
                     found.trainer_name = m.trainer_name
                     found.predictor_name = m.predictor_name

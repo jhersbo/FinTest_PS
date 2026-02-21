@@ -2,9 +2,10 @@
 from datetime import datetime, timezone
 from typing import Any
 from app.batch.models.job_unit import JobUnit
+from app.core.utils.serializable import Serializable
 
 
-class Job:
+class Job(Serializable):
     """
     This is the base class for all jobs consumed by the Redis queue.
     To create a new job, one must create a class which inherits from this one:
@@ -16,7 +17,7 @@ class Job:
             self.run(unit)
             ...
     """
-
+    gid_job_def:int
     config:dict[str, Any] = {}
 
     def run(self, unit:JobUnit) -> None:
@@ -27,9 +28,13 @@ class Job:
         This method can be implemented for async behavior in jobs
         """
         raise NotImplementedError("Child must implement this method")
-    
-    def configure(self, config:dict) -> None:
-        self.config = {k: v for k, v in config.items() if v is not None}
+
+    def configure(self, config:dict[str, Any]) -> None:
+        """
+        Merges a dict with this job's config dict, prioritizing the properties given in the argument
+        """
+        for k in config.keys():
+            self.config[k] = config[k]
     
     @staticmethod
     def now() -> datetime:

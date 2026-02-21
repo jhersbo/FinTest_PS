@@ -25,7 +25,7 @@ class RedisQueue:
 
     async def put(self, job:Job) -> rqJob:
         async with transaction():
-            unit = await JobUnit.create()
+            unit = await JobUnit.create(job.gid_job_def)
             _job = self.Q.enqueue(job.run, args=(unit,), job_timeout=RedisQueue.DEFAULT_TIMEOUT, on_success=end, on_failure=fail, meta={"gid_job_unit": unit.gid})
             unit.rq_token = _job.id
             await unit.update()
