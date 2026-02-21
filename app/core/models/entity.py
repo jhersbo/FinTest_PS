@@ -1,3 +1,5 @@
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import BIGINT
@@ -8,6 +10,16 @@ def __to_dict__(obj:object) -> dict[str, Any]:
     return {
         k: v for k,v in vars(obj).items() if not k.startswith(("_","<","s_id"))
     }
+
+def _serialize(v:Any) -> Any:
+    if isinstance(v, (datetime, date)):
+        return v.isoformat()
+    if isinstance(v, Decimal):
+        return float(v)
+    return v
+
+def __to_json__(obj:object) -> dict[str, Any]:
+    return {k: _serialize(v) for k, v in __to_dict__(obj).items()}
 
 class View(DeclarativeBase):
     """
@@ -32,6 +44,9 @@ class View(DeclarativeBase):
     def to_dict(self) -> dict[str, Any]:
         return __to_dict__(self)
 
+    def to_json(self) -> dict[str, Any]:
+        return __to_json__(self)
+
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
 class Entity(DeclarativeBase):
@@ -54,6 +69,9 @@ class Entity(DeclarativeBase):
 
     def to_dict(self) -> dict[str, Any]:
         return __to_dict__(self)
+
+    def to_json(self) -> dict[str, Any]:
+        return __to_json__(self)
 
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
@@ -86,5 +104,8 @@ class FindableEntity(DeclarativeBase):
 
     def to_dict(self) -> dict[str, Any]:
         return __to_dict__(self)
-    
+
+    def to_json(self) -> dict[str, Any]:
+        return __to_json__(self)
+
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method

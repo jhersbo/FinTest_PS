@@ -67,6 +67,21 @@ async def get_job(rq_token:str) -> JSONResponse:
         status_code=status.HTTP_200_OK
     )
 
+@router.get("/jobs")
+@auth
+async def get_jobList() -> JSONResponse:
+    jobs = await JobDef.find_all()
+    return JSONResponse(
+        {
+            "result": "Ok",
+            "subject": {
+                "jobs": [
+                    job.to_json() for job in jobs
+                ]
+            }
+        }
+    )
+
 @router.post("/seed/tickers/{market}")
 @auth
 async def post_seedTickers(market:str) -> JSONResponse:
