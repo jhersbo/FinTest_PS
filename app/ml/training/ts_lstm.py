@@ -9,6 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from app.batch.models.job_unit import JobUnit
 from app.core.config.config import get_config
 from app.core.utils.logger import get_logger
+from app.ml.core.models.model_type import ModelType
 from app.ml.core.models.training_run import RunStatus
 from app.ml.data.models.ticker import Ticker
 from app.ml.data.models.vw_ticker_timeseries import TickerTimeseries
@@ -210,9 +211,6 @@ class Trainer(Trainable):
         return model
 
 class TimeSeriesLSTM(Dataset):
-
-    NAME = "TimeSeriesLSTM"
-
     def __init__(self, df:pd.DataFrame, ticker:str, seq_len:int=10, feature_cols:list[str]=None, scaler:MinMaxScaler=None, scaler_path:str=None):
         self.seq_len = seq_len
         self.f_cols = feature_cols
