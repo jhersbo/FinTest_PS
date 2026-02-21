@@ -19,5 +19,6 @@ class Predictable(ABC):
     @abstractmethod
     def __predict_next__(self) -> float:...
 
-    @abstractmethod
-    def get_class_name() -> str:...
+    @classmethod
+    def get_class_name(cls) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"
