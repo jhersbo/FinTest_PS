@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy import String, JSON, BOOLEAN, TIMESTAMP, select
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.batch.job import Job
+from app.core.db.entity_finder import EntityFinder
 from app.core.models.entity import FindableEntity
 from app.core.models.globalid import GlobalId
 from app.core.db.session import transaction
@@ -10,7 +12,6 @@ from app.core.db.session import transaction
 
 class JobDef(FindableEntity):
     __tablename__ = "job_def"
-    __name__ = f"{__name__}.JobDef"
 
     display_name:Mapped[String] = mapped_column(
         String,
@@ -73,3 +74,14 @@ class JobDef(FindableEntity):
         async with transaction() as session:
             session.add(self)
             await session.flush()
+
+    def get_instance(self) -> Job:
+        """
+        Returns a pre-configured instance of the job_class
+        """
+        J = EntityFinder.resolve(self.job_class)
+        inst:Job = J()
+        inst.gid_job_def = self.gid
+        inst.config = self.default_config
+        return inst
+    

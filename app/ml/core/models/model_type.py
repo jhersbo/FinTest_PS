@@ -7,7 +7,6 @@ from ....core.db.session import transaction
 
 class ModelType(FindableEntity):
     __tablename__ = "model_type"
-    __name__ = f"{__name__}.ModelType"
 
     model_name:Mapped[String] = mapped_column(
         String,
@@ -26,10 +25,6 @@ class ModelType(FindableEntity):
         String,
         nullable=False
     )
-    default_config:Mapped[JSON] = mapped_column(
-        JSON,
-        nullable=True
-    )
 
     @staticmethod
     async def find_by_gid(gid:int) -> "ModelType":
@@ -38,7 +33,7 @@ class ModelType(FindableEntity):
             return await session.scalar(statement=stmt)
 
     @staticmethod
-    async def create(model_name:str, trainer_name:str, predictor_name:str, default_config:dict={}, is_available:bool=True):
+    async def create(model_name:str, trainer_name:str, predictor_name:str, is_available:bool=True):
         M = ModelType()
 
         async with transaction() as session:
@@ -48,7 +43,6 @@ class ModelType(FindableEntity):
             M.is_available = is_available
             M.trainer_name = trainer_name
             M.predictor_name = predictor_name
-            M.default_config = default_config
             session.add(M)
             await session.flush()
             return M

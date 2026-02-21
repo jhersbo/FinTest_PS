@@ -15,7 +15,6 @@ class TokenStatus(Enum):
 
 class Token(FindableEntity):
     __tablename__ = "core_token"
-    __name__ = f"{__name__}.Token"
 
     token:Mapped[String] = mapped_column(
         String, 

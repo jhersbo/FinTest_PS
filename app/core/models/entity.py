@@ -1,27 +1,11 @@
-from datetime import date, datetime
-from decimal import Decimal
-from typing import Any
-
 from sqlalchemy import BIGINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 import pandas as pd
 
-def __to_dict__(obj:object) -> dict[str, Any]:
-    return {
-        k: v for k,v in vars(obj).items() if not k.startswith(("_","<","s_id"))
-    }
+from app.core.utils.serializable import Serializable
 
-def _serialize(v:Any) -> Any:
-    if isinstance(v, (datetime, date)):
-        return v.isoformat()
-    if isinstance(v, Decimal):
-        return float(v)
-    return v
 
-def __to_json__(obj:object) -> dict[str, Any]:
-    return {k: _serialize(v) for k, v in __to_dict__(obj).items()}
-
-class View(DeclarativeBase):
+class View(DeclarativeBase, Serializable):
     """
     The parent class for all DB views.
     """
@@ -35,21 +19,15 @@ class View(DeclarativeBase):
             if val is not None and not str(val).startswith("<"):
                 s += f"{key}: {val}\n"
         return s
-    
+
     def equals(self, obj:"View") -> bool:
         if not obj:
             return False
         return self.to_dict() == obj.to_dict()
 
-    def to_dict(self) -> dict[str, Any]:
-        return __to_dict__(self)
-
-    def to_json(self) -> dict[str, Any]:
-        return __to_json__(self)
-
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
-class Entity(DeclarativeBase):
+class Entity(DeclarativeBase, Serializable):
     """
     The parent class for all DB tables.
     """
@@ -61,21 +39,15 @@ class Entity(DeclarativeBase):
             if val is not None and not str(val).startswith("<"):
                 s += f"{key}: {val}\n"
         return s
-    
+
     def equals(self, obj:"Entity") -> bool:
         if not obj:
             return False
         return self.to_dict() == obj.to_dict()
 
-    def to_dict(self) -> dict[str, Any]:
-        return __to_dict__(self)
-
-    def to_json(self) -> dict[str, Any]:
-        return __to_json__(self)
-
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method
 
-class FindableEntity(DeclarativeBase):
+class FindableEntity(DeclarativeBase, Serializable):
     """
     The parent class for all DB tables which implement a global ID
     """
@@ -87,7 +59,8 @@ class FindableEntity(DeclarativeBase):
     )
 
     def get_name(self) -> str:
-        return self.__name__
+        t = type(self)
+        return f"{t.__module__}.{t.__qualname__}"
 
     def __repr__(self):
         s = f"table_name: {self.__tablename__}\n"
@@ -96,16 +69,10 @@ class FindableEntity(DeclarativeBase):
             if val is not None and not str(val).startswith("<"):
                 s += f"{key}: {val}\n"
         return s
-    
+
     def equals(self, obj:"FindableEntity") -> bool:
         if not obj:
             return False
         return self.to_dict() == obj.to_dict()
-
-    def to_dict(self) -> dict[str, Any]:
-        return __to_dict__(self)
-
-    def to_json(self) -> dict[str, Any]:
-        return __to_json__(self)
 
     def to_df(self) -> pd.DataFrame: ... # TODO - potentially implement a general method

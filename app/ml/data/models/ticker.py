@@ -11,7 +11,6 @@ from ....core.models.entity import FindableEntity
 
 class Ticker(FindableEntity):
     __tablename__ = "core_ticker"
-    __name__ = f"{__name__}.Ticker"
 
     ticker:Mapped[String] = mapped_column(
         String,

@@ -10,7 +10,6 @@ from app.core.models.globalid import GlobalId
 
 class _JobStats(Entity):
     __tablename__ = "job_stats"
-    __name__ = f"{__name__}._JobStats"
 
     s_id:Mapped[BIGINT] = mapped_column(
         BIGINT,
@@ -69,7 +68,6 @@ class _JobStats(Entity):
 
 class _JobLog(Entity):
     __tablename__ = "job_log"
-    __name__ = f"{__name__}._JobLog"
 
     s_id:Mapped[BIGINT] = mapped_column(
         BIGINT,
@@ -132,7 +130,6 @@ class JobUnit(FindableEntity):
     __allow_unmapped__ = True
 
     __tablename__ = "job_unit"
-    __name__ = f"{__name__}.JobUnit"
 
     gid_job_def:Mapped[BIGINT] = mapped_column(
         BIGINT,

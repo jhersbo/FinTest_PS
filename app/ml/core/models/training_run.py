@@ -19,7 +19,6 @@ class RunStatus:
 
 class TrainingRun(FindableEntity):
     __tablename__ = "training_run"
-    __name__ = f"{__name__}.TrainingRun"
 
     gid_model_type:Mapped[BIGINT] = mapped_column(
         BIGINT,
