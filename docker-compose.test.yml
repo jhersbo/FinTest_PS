@@ -1,0 +1,23 @@
+services:
+  fintest_ps_test:
+    container_name: fintest_ps_test
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/app
+    environment:
+      DB_URL: postgresql+asyncpg://user:pass@localhost/testdb
+      DB_SYNC_URL: postgresql+psycopg2://user:pass@localhost/testdb
+      DB_USER: user
+      DB_PASSWORD: pass
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: testdb
+      REDIS_PORT: "6379"
+      LOG_DIR: /tmp/logs
+      OBJ_DIR: /tmp/objects
+      MDL_DIR: /tmp/models
+      ALPHA_VANTAGE_API_KEY: test
+      POLYGON_API_KEY: test
+      NEWS_API_KEY: test
