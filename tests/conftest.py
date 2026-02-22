@@ -32,3 +32,5 @@ _TEST_ENV = {
 
 for _k, _v in _TEST_ENV.items():
     os.environ.setdefault(_k, _v)
+
+os.makedirs(os.environ["LOG_DIR"], exist_ok=True)
